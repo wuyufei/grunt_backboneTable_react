@@ -1,0 +1,3 @@
+cwd: 'src'
+dest: 'bin'
+compileOnSave: true
