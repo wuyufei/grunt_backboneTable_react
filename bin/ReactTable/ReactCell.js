@@ -29,7 +29,7 @@
   };
 
   TextCell = React.createClass({
-    mixins: [React.addons.LinkedStateMixin, CellMixin],
+    mixins: [React.addons.PureRenderMixin, React.addons.LinkedStateMixin, CellMixin],
     render: function() {
       var cellStyle, inputStyle;
       cellStyle = {
@@ -47,7 +47,7 @@
           "autoFocus": "true",
           "type": 'text',
           "valueLink": this.linkState("value"),
-          "onBlur": _.partial(this.props.cellEndEdit, this.state.value),
+          "onBlur": this.props.cellEndEdit,
           "className": 'form-control'
         }));
       } else {
@@ -60,7 +60,7 @@
   });
 
   SelectCell = React.createClass({
-    mixins: [React.addons.LinkedStateMixin, CellMixin],
+    mixins: [React.addons.PureRenderMixin, React.addons.LinkedStateMixin, CellMixin],
     getDisplayValue: function() {
       var displayValue, i, len, opt, ref;
       ref = this.props.schema.options;
@@ -99,7 +99,7 @@
           "style": inputStyle,
           "ref": "input",
           "valueLink": this.linkState("value"),
-          "onBlur": this.props.cellEndEdit.bind(this, this.state.value),
+          "onBlur": this.props.cellEndEdit,
           "className": 'form-control',
           "autoFocus": "true"
         }, options));
@@ -112,20 +112,23 @@
   });
 
   DateTimeCell = React.createClass({
-    mixins: [CellMixin],
+    mixins: [React.addons.PureRenderMixin, React.addons.LinkedStateMixin, CellMixin],
     componentWillMount: function() {
       return this.setState({
         value: this.props.value
       });
     },
-    getDisplayValue: function() {
-      return this.props.value;
-    },
     closeButtonClick: function(e) {
-      console.log("close");
+      debugger;
+      var that;
+      that = this;
+      this.setState({
+        value: ""
+      }, function() {
+        return that.props.cellEndEdit();
+      });
       e.preventDefault();
-      e.stopPropagation();
-      return this.props.cellEndEdit("");
+      return e.stopPropagation();
     },
     render: function() {
       var cellStyle, input, inputStyle;
@@ -135,12 +138,6 @@
       inputStyle = {
         marginBottom: 0
       };
-
-      /*<td style={cellStyle}>
-         <input style={inputStyle} type="text" ref="input" defaultValue={@getDisplayValue()}
-           className='form-control' />
-      </td>
-       */
       if (this.props.required) {
         input = React.createElement("input", {
           "style": inputStyle,
@@ -160,7 +157,7 @@
           "autoFocus": "true",
           "ref": "input",
           "type": "text",
-          "defaultValue": this.getDisplayValue(),
+          "valueLink": this.linkState("value"),
           "readOnly": "readonly"
         }), React.createElement("span", {
           "onClick": this.closeButtonClick,
@@ -175,22 +172,18 @@
         }, input);
       } else {
         return React.createElement("td", {
-          "onMouseDown": this.props.cellClick
-        }, this.getDisplayValue());
+          "onClick": this.props.cellClick
+        }, this.state.value);
       }
-    },
-    componentDidMount: function() {
-      var td;
-      td = this.getDOMNode();
-      return this.width = $(td).innerWidth();
     },
     componentDidUpdate: function() {
       var input, that;
       that = this;
       if (this.props.isEdit) {
         input = $(React.findDOMNode(this.refs.input));
-        $(this.getDOMNode()).width(this.width);
-        setTimeout(function() {
+        if (input.data("datetimepicker")) {
+          input.datetimepicker("show");
+        } else {
           input.datetimepicker({
             format: that.props.schema.format,
             language: "zh-CN",
@@ -204,12 +197,16 @@
             todayBtn: true,
             pickerPosition: "bottom-right"
           });
-          return input.datetimepicker('show');
-        }, 0);
-        input.on("changeDate", function() {
-          var value;
-          value = input.val();
-          return that.props.cellEndEdit(value);
+          input.datetimepicker('show');
+        }
+        input.off("changeDate");
+        input.one("changeDate", function() {
+          debugger;
+          return that.setState({
+            value: input.val()
+          }, function() {
+            return that.props.cellEndEdit();
+          });
         });
         if (!this.props.required) {
           input.on("hide", function() {
@@ -226,18 +223,19 @@
     },
     componentWillUpdate: function(nextProps, nextState) {
       var input;
-      if (this.props.isEdit) {
+      if (this.props.isEdit === true && nextProps.isEdit !== true) {
         input = $(React.findDOMNode(this.refs.input));
-        input.datetimepicker("remove");
-        return console.log("remove");
+        return input.datetimepicker("remove");
       }
     },
     componentWillUnmount: function() {
       var input;
       if (this.props.isEdit) {
         input = $(React.findDOMNode(this.refs.input));
-        input.datetimepicker("remove");
-        return console.log("remove");
+        if (input.data("datetimepicker")) {
+          input.datetimepicker("remove");
+          return console.log("remove");
+        }
       }
     }
   });

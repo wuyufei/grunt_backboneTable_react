@@ -1,4 +1,5 @@
 Row = React.createClass
+  mixins:[React.addons.PureRenderMixin]
   componentWillMount:->
   getButtonProps:(buttonInfo)->
     btnProps = {}
@@ -71,7 +72,7 @@ Row = React.createClass
         isEdit:if @props.edit is true and @props.editCell is k then true else false
         cellClick:_.partial(@props.cellClick,k)
         cellDoubleClick:_.partial(@props.cellDoubleClick,k)
-        cellEndEdit:_.partial(@props.cellEndEdit,k)
+        cellEndEdit:@props.cellEndEdit
         required:validation[k]?.required
         schema:v
 

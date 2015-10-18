@@ -33,6 +33,9 @@
     },
     addButtonClick: function(e) {
       var model;
+      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
+        return;
+      }
       if (this.props.addButtonClick) {
         addButtonClick(e);
       }
@@ -48,6 +51,9 @@
     },
     detailButtonClick: function(model, e) {
       var base;
+      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
+        return;
+      }
       if (typeof (base = this.props).detailButtonClick === "function") {
         base.detailButtonClick(e, model);
       }
@@ -60,6 +66,9 @@
     },
     editButtonClick: function(model, e) {
       var base;
+      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
+        return;
+      }
       if (typeof (base = this.props).detailButtonClick === "function") {
         base.detailButtonClick(e, model);
       }
@@ -72,6 +81,9 @@
     },
     deleteButtonClick: function(model, e) {
       var modalInfoProps;
+      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
+        return;
+      }
       modalInfoProps = {
         msg: "是否确认删除？",
         confirmButtonClick: function(event) {
@@ -98,7 +110,7 @@
   };
 
   Table = React.createClass({
-    mixins: [ActionMixin],
+    mixins: [React.addons.PureRenderMixin, ActionMixin],
     getInitialState: function() {
       return {
         selectRow: null,
@@ -118,11 +130,7 @@
         return this.forceUpdate();
       });
     },
-    componentWillUpdate: function(nextProps, nextState) {
-      if (nextState.sortField !== this.state.sortField || nextState.sortDir !== this.state.sortDir) {
-        return this.sortedmodels = this.sortCollection();
-      }
-    },
+    componentWillUpdate: function(nextProps, nextState) {},
     pageChange: function(page) {
       return this.setState({
         currentPage: page,
@@ -149,43 +157,26 @@
       });
     },
     sortCollection: function() {
-      var sortDir, sortField, sortModels;
-      if (this.state.sortField != null) {
-        sortField = this.state.sortField;
-        sortDir = this.state.sortDir;
-        return sortModels = this.props.collection.models.sort(function(a, b) {
-          a = a.get(sortField);
-          b = b.get(sortField);
-          if (a > b) {
-            if (sortDir === "asc") {
-              return 1;
-            } else {
-              return -1;
-            }
-          } else if (a === b) {
-            return 0;
-          } else {
-            if (sortDir === "asc") {
-              return -1;
-            } else {
-              return 1;
-            }
-          }
-        });
-      } else {
-        return this.props.collection.models;
-      }
+
+      /*if @state.sortField?
+        sortField = @state.sortField
+        sortDir = @state.sortDir
+        sortModels = @props.collection.models.sort (a,b)->
+          a = a.get(sortField)
+          b = b.get(sortField)
+          if a>b
+            if sortDir is "asc" then 1 else -1
+          else if a is b
+            0
+          else
+            if sortDir is "asc" then -1 else 1
+      else
+       */
+      return this.props.collection.models;
     },
     cellBeginEdit: function(model, key) {
-      var editCell, editKey, editRow, editValue, eidtModel;
       if (this.state.editRow) {
-        editRow = this.refs[this.state.editRow];
-        editCell = editRow.refs[this.state.editCell];
-        eidtModel = editRow.props.model;
-        editKey = editCell.props.fieldKey;
-        editValue = editCell.state.value;
-        debugger;
-        if (this.cellEndEdit(eidtModel, editKey, editValue)) {
+        if (this.cellEndEdit()) {
           return this.setState({
             editRow: model.cid,
             editCell: key,
@@ -200,30 +191,39 @@
         });
       }
     },
-    cellEndEdit: function(model, key, value) {
-      var error, invalidHandle;
-      error = null;
-      invalidHandle = function(model, er) {
-        return error = er;
-      };
-      model.on("invalid", invalidHandle);
-      model.set(key, value, {
-        validate: true
-      });
-      model.off("invalid", invalidHandle);
-      if (error != null) {
-        this.setState({
-          editRow: model.cid,
-          editCell: key,
-          cellError: error
+    cellEndEdit: function() {
+      var editCell, editRow, error, invalidHandle, key, model, value;
+      if (this.state.editRow) {
+        editRow = this.refs[this.state.editRow];
+        editCell = editRow.refs[this.state.editCell];
+        model = editRow.props.model;
+        key = editCell.props.fieldKey;
+        value = editCell.state.value;
+        error = null;
+        invalidHandle = function(model, er) {
+          return error = er;
+        };
+        model.on("invalid", invalidHandle);
+        model.set(key, value, {
+          validate: true
         });
-        return false;
+        model.off("invalid", invalidHandle);
+        if (error != null) {
+          this.setState({
+            editRow: model.cid,
+            editCell: key,
+            cellError: error
+          });
+          return false;
+        } else {
+          this.setState({
+            editRow: null,
+            editCell: null,
+            cellError: null
+          });
+          return true;
+        }
       } else {
-        this.setState({
-          editRow: null,
-          editCell: null,
-          cellError: null
-        });
         return true;
       }
     },
@@ -266,8 +266,9 @@
       return columnHeaders;
     },
     render: function() {
-      var containerStyle, model, pageCollection, rowProps, rows, that;
+      var containerStyle, model, pageCollection, rowProps, rows, sortModels, that;
       that = this;
+      sortModels = this.sortCollection();
       pageCollection = this.sortedModels.slice(this.state.currentPage * 10, +((this.state.currentPage + 1) * 10 - 1) + 1 || 9e9);
       rows = (function() {
         var i, len, results;
@@ -277,7 +278,7 @@
           rowProps = {
             model: model,
             cellClick: that.cellClick.bind(this, model),
-            cellEndEdit: that.cellEndEdit.bind(this, model),
+            cellEndEdit: that.cellEndEdit,
             edit: that.state.editRow === model.cid ? true : false,
             editCell: that.state.editRow === model.cid ? that.state.editCell : null,
             error: that.state.editRow === model.cid ? this.state.cellError : null,

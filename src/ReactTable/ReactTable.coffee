@@ -23,20 +23,24 @@ ActionMixin =
     @props.cellDoubleClick?(model,key)
 
   addButtonClick:(e)->
+    return if @cellEndEdit?() is false
     if @props.addButtonClick
       addButtonClick(e)
     unless e.isDefaultPrevented()
       model = @props.collection.create {},{wait:true}
       React.render  <ModalForm model={model} headerText={"新增"}/>,$("<div>").appendTo($("body"))[0]
   detailButtonClick:(model,e)->
+    return if @cellEndEdit?() is false
     @props.detailButtonClick?(e,model)
     unless e.isDefaultPrevented()
       React.render <ModalForm model={model} headerText={"详情"}/>,$("<div>").appendTo($("body"))[0]
   editButtonClick:(model,e)->
+    return if @cellEndEdit?() is false
     @props.detailButtonClick?(e,model)
     unless e.isDefaultPrevented()
       React.render <ModalForm model={model} headerText={"编辑"}/>,$("<div>").appendTo($("body"))[0]
   deleteButtonClick:(model,e)->
+    return if @cellEndEdit?() is false
     modalInfoProps =
       msg:"是否确认删除？"
       confirmButtonClick:(event)->
@@ -58,7 +62,7 @@ ActionMixin =
 
 
 Table = React.createClass
-    mixins:[ActionMixin]
+    mixins:[React.addons.PureRenderMixin,ActionMixin]
     getInitialState:->
       selectRow:null
       sortField:null
@@ -74,8 +78,8 @@ Table = React.createClass
         @forceUpdate()
     componentWillUpdate:(nextProps, nextState)->#不能在该方法中更新props和state
       #_.isEqual深度判等
-      if nextState.sortField isnt @state.sortField or nextState.sortDir isnt @state.sortDir
-        @sortedmodels = @sortCollection()
+      #if nextState.sortField isnt @state.sortField or nextState.sortDir isnt @state.sortDir
+      #  @sortedmodels = @sortCollection()
 
     pageChange:(page)->
       @setState
@@ -97,7 +101,7 @@ Table = React.createClass
           editCell:null
           cellError:null
     sortCollection:->
-      if @state.sortField?
+      ###if @state.sortField?
         sortField = @state.sortField
         sortDir = @state.sortDir
         sortModels = @props.collection.models.sort (a,b)->
@@ -109,20 +113,12 @@ Table = React.createClass
             0
           else
             if sortDir is "asc" then -1 else 1
-      else
-        @props.collection.models
-
-
+      else###
+      @props.collection.models
 
     cellBeginEdit:(model,key)->
       if @state.editRow
-        editRow = @refs[@state.editRow]
-        editCell = editRow.refs[@state.editCell]
-        eidtModel = editRow.props.model
-        editKey = editCell.props.fieldKey
-        editValue = editCell.state.value
-        debugger
-        if @cellEndEdit(eidtModel,editKey,editValue)
+        if @cellEndEdit()
           @setState
             editRow:model.cid
             editCell:key
@@ -133,25 +129,34 @@ Table = React.createClass
           editCell:key
           cellError:null
 
-    cellEndEdit:(model,key,value)->
-      error = null
-      invalidHandle =  (model, er)->
-        error = er
-      model.on "invalid",invalidHandle
-      model.set key,value,validate:true
-      model.off "invalid",invalidHandle
-      if error?
-        @setState
-          editRow:model.cid
-          editCell:key
-          cellError:error
-        return false
+    cellEndEdit:->
+
+      if @state.editRow
+        editRow = @refs[@state.editRow]
+        editCell = editRow.refs[@state.editCell]
+        model = editRow.props.model
+        key = editCell.props.fieldKey
+        value = editCell.state.value
+        error = null
+        invalidHandle =  (model, er)->
+          error = er
+        model.on "invalid",invalidHandle
+        model.set key,value,validate:true
+        model.off "invalid",invalidHandle
+        if error?
+          @setState
+            editRow:model.cid
+            editCell:key
+            cellError:error
+          return false
+        else
+          @setState
+            editRow:null
+            editCell:null
+            cellError:null
+          return true
       else
-        @setState
-          editRow:null
-          editCell:null
-          cellError:null
-        return true
+        true
 
 
     renderColumns:->
@@ -176,12 +181,13 @@ Table = React.createClass
 
     render:->
       that = @
+      sortModels = @sortCollection()
       pageCollection = @sortedModels[@state.currentPage*10..(@state.currentPage+1)*10-1]
       rows = for model in pageCollection
         rowProps =
           model:model
           cellClick:that.cellClick.bind(@,model)
-          cellEndEdit:that.cellEndEdit.bind(@,model)
+          cellEndEdit:that.cellEndEdit
           edit:if that.state.editRow is model.cid then true else false
           editCell:if that.state.editRow is model.cid then that.state.editCell else null
           error:if that.state.editRow is model.cid then @state.cellError else null

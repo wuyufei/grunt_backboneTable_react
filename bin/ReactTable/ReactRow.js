@@ -3,6 +3,7 @@
     hasProp = {}.hasOwnProperty;
 
   Row = React.createClass({
+    mixins: [React.addons.PureRenderMixin],
     componentWillMount: function() {},
     getButtonProps: function(buttonInfo) {
       var btnProps, ref, ref1, ref2;
@@ -124,7 +125,7 @@
             isEdit: this.props.edit === true && this.props.editCell === k ? true : false,
             cellClick: _.partial(this.props.cellClick, k),
             cellDoubleClick: _.partial(this.props.cellDoubleClick, k),
-            cellEndEdit: _.partial(this.props.cellEndEdit, k),
+            cellEndEdit: this.props.cellEndEdit,
             required: (ref1 = validation[k]) != null ? ref1.required : void 0,
             schema: v
           };
