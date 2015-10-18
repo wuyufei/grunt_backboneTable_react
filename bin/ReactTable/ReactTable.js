@@ -1,8 +1,104 @@
 (function() {
-  var Table,
+  var ActionMixin, Table,
     hasProp = {}.hasOwnProperty;
 
+  ActionMixin = {
+    cellClick: function(model, key, e) {
+      var base, editCell, editKey, editRow, editValue, eidtModel, schema;
+      schema = model.schema[key];
+      if (schema.readonly === true) {
+        if (this.state.editRow) {
+          editRow = this.refs[this.state.editRow];
+          editCell = editRow.refs[this.state.editCell];
+          eidtModel = editRow.props.model;
+          editKey = editCell.props.fieldKey;
+          editValue = editCell.state.value;
+          this.cellEndEdit(eidtModel, editKey, editValue);
+        }
+      } else {
+        this.cellBeginEdit(model, key);
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      debugger;
+      this.setState({
+        selectRow: model.cid
+      });
+      return typeof (base = this.props).cellClick === "function" ? base.cellClick(model, key) : void 0;
+    },
+    cellDoubleClick: function(model, key) {
+      debugger;
+      var base;
+      return typeof (base = this.props).cellDoubleClick === "function" ? base.cellDoubleClick(model, key) : void 0;
+    },
+    addButtonClick: function(e) {
+      var model;
+      if (this.props.addButtonClick) {
+        addButtonClick(e);
+      }
+      if (!e.isDefaultPrevented()) {
+        model = this.props.collection.create({}, {
+          wait: true
+        });
+        return React.render(React.createElement(ModalForm, {
+          "model": model,
+          "headerText": "新增"
+        }), $("<div>").appendTo($("body"))[0]);
+      }
+    },
+    detailButtonClick: function(model, e) {
+      var base;
+      if (typeof (base = this.props).detailButtonClick === "function") {
+        base.detailButtonClick(e, model);
+      }
+      if (!e.isDefaultPrevented()) {
+        return React.render(React.createElement(ModalForm, {
+          "model": model,
+          "headerText": "详情"
+        }), $("<div>").appendTo($("body"))[0]);
+      }
+    },
+    editButtonClick: function(model, e) {
+      var base;
+      if (typeof (base = this.props).detailButtonClick === "function") {
+        base.detailButtonClick(e, model);
+      }
+      if (!e.isDefaultPrevented()) {
+        return React.render(React.createElement(ModalForm, {
+          "model": model,
+          "headerText": "编辑"
+        }), $("<div>").appendTo($("body"))[0]);
+      }
+    },
+    deleteButtonClick: function(model, e) {
+      var modalInfoProps;
+      modalInfoProps = {
+        msg: "是否确认删除？",
+        confirmButtonClick: function(event) {
+          model.destroy({
+            success: function() {
+              var props;
+              props = {
+                msg: "删除成功",
+                autoClose: true
+              };
+              return React.render(React.createElement(ModalInfo, React.__spread({}, modalInfoProps)), $("<div>").appendTo($("body"))[0]);
+            },
+            error: function(model, response, options) {
+              event.preventDefault();
+              return event.error = options.errorThrown;
+            },
+            wait: true,
+            async: false
+          });
+        }
+      };
+      return React.render(React.createElement(ModalInfo, React.__spread({}, modalInfoProps)), $("<div>").appendTo($("body"))[0]);
+    }
+  };
+
   Table = React.createClass({
+    mixins: [ActionMixin],
     getInitialState: function() {
       return {
         selectRow: null,
@@ -80,25 +176,6 @@
         return this.props.collection.models;
       }
     },
-    cellClick: function(model, key) {
-      var editCell, editKey, editRow, editValue, eidtModel, schema;
-      schema = model.schema[key];
-      if (schema.readonly === true) {
-        if (this.state.editRow) {
-          editRow = this.refs[this.state.editRow];
-          editCell = editRow.refs[this.state.editCell];
-          eidtModel = editRow.props.model;
-          editKey = editCell.props.fieldKey;
-          editValue = editCell.state.value;
-          this.cellEndEdit(eidtModel, editKey, editValue);
-        }
-      } else {
-        this.cellBeginEdit(model, key);
-      }
-      return this.setState({
-        selectRow: model.cid
-      });
-    },
     cellBeginEdit: function(model, key) {
       var editCell, editKey, editRow, editValue, eidtModel;
       if (this.state.editRow) {
@@ -149,70 +226,6 @@
         });
         return true;
       }
-    },
-    addButtonClick: function(e) {
-      var model;
-      if (this.props.addButtonClick) {
-        addButtonClick(e);
-      }
-      if (!e.isDefaultPrevented()) {
-        model = this.props.collection.create({}, {
-          wait: true
-        });
-        return React.render(React.createElement(ModalForm, {
-          "model": model,
-          "headerText": "新增"
-        }), $("<div>").appendTo($("body"))[0]);
-      }
-    },
-    detailButtonClick: function(model, e) {
-      var base;
-      if (typeof (base = this.props).detailButtonClick === "function") {
-        base.detailButtonClick(e, model);
-      }
-      if (!e.isDefaultPrevented()) {
-        return React.render(React.createElement(ModalForm, {
-          "model": model,
-          "headerText": "详情"
-        }), $("<div>").appendTo($("body"))[0]);
-      }
-    },
-    editButtonClick: function(model, e) {
-      var base;
-      if (typeof (base = this.props).detailButtonClick === "function") {
-        base.detailButtonClick(e, model);
-      }
-      if (!e.isDefaultPrevented()) {
-        return React.render(React.createElement(ModalForm, {
-          "model": model,
-          "headerText": "编辑"
-        }), $("<div>").appendTo($("body"))[0]);
-      }
-    },
-    deleteButtonClick: function(model, e) {
-      var modalInfoProps;
-      modalInfoProps = {
-        msg: "是否确认删除？",
-        confirmButtonClick: function(event) {
-          model.destroy({
-            success: function() {
-              var props;
-              props = {
-                msg: "删除成功",
-                autoClose: true
-              };
-              return React.render(React.createElement(ModalInfo, React.__spread({}, modalInfoProps)), $("<div>").appendTo($("body"))[0]);
-            },
-            error: function(model, response, options) {
-              event.preventDefault();
-              return event.error = options.errorThrown;
-            },
-            wait: true,
-            async: false
-          });
-        }
-      };
-      return React.render(React.createElement(ModalInfo, React.__spread({}, modalInfoProps)), $("<div>").appendTo($("body"))[0]);
     },
     renderColumns: function() {
       var addColumnIcon, columnHeaders, k, ref, schema, sortDir, sortField, v;
@@ -272,7 +285,8 @@
             editButtonClick: that.editButtonClick.bind(this, model),
             deleteButtonClick: that.deleteButtonClick.bind(this, model),
             buttons: that.props.buttons,
-            selected: that.state.selectRow === model.cid ? true : false
+            selected: that.state.selectRow === model.cid ? true : false,
+            cellDoubleClick: this.cellDoubleClick.bind(this, model)
           };
           results.push(React.createElement(Row, React.__spread({
             "ref": model.cid,

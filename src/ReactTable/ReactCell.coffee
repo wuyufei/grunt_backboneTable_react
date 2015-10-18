@@ -1,3 +1,5 @@
+
+
 CellMixin =
   componentWillMount:->
     @setState value: @props.value
@@ -16,8 +18,10 @@ CellMixin =
 
 
 
+
 TextCell = React.createClass
     mixins:[React.addons.LinkedStateMixin,CellMixin]
+
     render:->
       cellStyle =
         padding:0
@@ -29,7 +33,7 @@ TextCell = React.createClass
              className='form-control' />
         </td>
       else
-        <td  onClick={@props.cellClick}>{@state.value}</td>
+        <td  onDoubleClick={@props.cellDoubleClick} onClick={@props.cellClick}>{@state.value}</td>
 
 SelectCell = React.createClass
     mixins:[React.addons.LinkedStateMixin,CellMixin]

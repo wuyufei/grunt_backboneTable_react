@@ -47,6 +47,7 @@ Users = Backbone.Collection.extend
   url:"/users"
   model:User
 
+
 users = new Users
 
 
@@ -66,6 +67,12 @@ users.fetch
   async:false
 tableProps =
   collection:users
+  cellClick:(model,key)->
+    debugger
+    #alert("单击")
+  cellDoubleClick:(model,key)->
+    debugger
+    alert("双击")
   buttons:[
     {text:"详情", command:"detail"}
     {text:"编辑", command:"edit"}

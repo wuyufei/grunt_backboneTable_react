@@ -1,4 +1,64 @@
+ActionMixin =
+  cellClick:(model,key,e)->
+    schema = model.schema[key]
+    if schema.readonly is true
+      if @state.editRow
+        editRow = @refs[@state.editRow]
+        editCell = editRow.refs[@state.editCell]
+        eidtModel = editRow.props.model
+        editKey = editCell.props.fieldKey
+        editValue = editCell.state.value
+        @cellEndEdit(eidtModel,editKey,editValue)
+    else
+      @cellBeginEdit(model,key)
+      e.preventDefault()
+      e.stopPropagation()
+    debugger
+    @setState
+      selectRow:model.cid
+    @props.cellClick?(model,key)
+
+  cellDoubleClick:(model,key)->
+    debugger
+    @props.cellDoubleClick?(model,key)
+
+  addButtonClick:(e)->
+    if @props.addButtonClick
+      addButtonClick(e)
+    unless e.isDefaultPrevented()
+      model = @props.collection.create {},{wait:true}
+      React.render  <ModalForm model={model} headerText={"新增"}/>,$("<div>").appendTo($("body"))[0]
+  detailButtonClick:(model,e)->
+    @props.detailButtonClick?(e,model)
+    unless e.isDefaultPrevented()
+      React.render <ModalForm model={model} headerText={"详情"}/>,$("<div>").appendTo($("body"))[0]
+  editButtonClick:(model,e)->
+    @props.detailButtonClick?(e,model)
+    unless e.isDefaultPrevented()
+      React.render <ModalForm model={model} headerText={"编辑"}/>,$("<div>").appendTo($("body"))[0]
+  deleteButtonClick:(model,e)->
+    modalInfoProps =
+      msg:"是否确认删除？"
+      confirmButtonClick:(event)->
+        model.destroy
+          success:->
+            props =
+              msg:"删除成功"
+              autoClose:true
+            React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
+          error:(model, response, options)->
+            event.preventDefault()
+            event.error = options.errorThrown
+          wait:true
+          async:false
+        return
+    React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
+
+
+
+
 Table = React.createClass
+    mixins:[ActionMixin]
     getInitialState:->
       selectRow:null
       sortField:null
@@ -53,20 +113,7 @@ Table = React.createClass
         @props.collection.models
 
 
-    cellClick:(model,key)->
-      schema = model.schema[key]
-      if schema.readonly is true
-        if @state.editRow
-          editRow = @refs[@state.editRow]
-          editCell = editRow.refs[@state.editCell]
-          eidtModel = editRow.props.model
-          editKey = editCell.props.fieldKey
-          editValue = editCell.state.value
-          @cellEndEdit(eidtModel,editKey,editValue)
-      else
-        @cellBeginEdit(model,key)
-      @setState
-        selectRow:model.cid
+
     cellBeginEdit:(model,key)->
       if @state.editRow
         editRow = @refs[@state.editRow]
@@ -105,39 +152,6 @@ Table = React.createClass
           editCell:null
           cellError:null
         return true
-    addButtonClick:(e)->
-      if @props.addButtonClick
-        addButtonClick(e)
-      unless e.isDefaultPrevented()
-        model = @props.collection.create {},{wait:true}
-        React.render  <ModalForm model={model} headerText={"新增"}/>,$("<div>").appendTo($("body"))[0]
-    detailButtonClick:(model,e)->
-      @props.detailButtonClick?(e,model)
-      unless e.isDefaultPrevented()
-        React.render <ModalForm model={model} headerText={"详情"}/>,$("<div>").appendTo($("body"))[0]
-    editButtonClick:(model,e)->
-      @props.detailButtonClick?(e,model)
-      unless e.isDefaultPrevented()
-        React.render <ModalForm model={model} headerText={"编辑"}/>,$("<div>").appendTo($("body"))[0]
-    deleteButtonClick:(model,e)->
-      modalInfoProps =
-        msg:"是否确认删除？"
-        confirmButtonClick:(event)->
-          model.destroy
-            success:->
-              props =
-                msg:"删除成功"
-                autoClose:true
-              React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
-            error:(model, response, options)->
-              event.preventDefault()
-              event.error = options.errorThrown
-            wait:true
-            async:false
-          return
-      React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
-
-
 
 
     renderColumns:->
@@ -176,6 +190,7 @@ Table = React.createClass
           deleteButtonClick:that.deleteButtonClick.bind(@,model)
           buttons:that.props.buttons
           selected:if that.state.selectRow is model.cid then true else false
+          cellDoubleClick:@cellDoubleClick.bind(@,model)
         <Row ref={model.cid} key={model.cid}  {...rowProps}/>
       containerStyle =
                     marginBottom:10

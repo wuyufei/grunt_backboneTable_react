@@ -31,7 +31,6 @@
       return btnProps;
     },
     render: function() {
-      debugger;
       var btn, btnProps, buttonCell, buttonCellWidth, buttons, buttonsEl, cellProps, cells, editCellStyle, k, list, listEl, ref, schema, splitButton, splitButtonEl, that, v, validation;
       that = this;
       schema = this.props.model.schema;
@@ -124,6 +123,7 @@
             error: this.props.error,
             isEdit: this.props.edit === true && this.props.editCell === k ? true : false,
             cellClick: _.partial(this.props.cellClick, k),
+            cellDoubleClick: _.partial(this.props.cellDoubleClick, k),
             cellEndEdit: _.partial(this.props.cellEndEdit, k),
             required: (ref1 = validation[k]) != null ? ref1.required : void 0,
             schema: v

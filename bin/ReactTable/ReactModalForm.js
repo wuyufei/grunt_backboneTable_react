@@ -1,9 +1,89 @@
 (function() {
-  var ModalForm,
+  var EditControlMinin, ModalForm,
     hasProp = {}.hasOwnProperty;
 
+  EditControlMinin = {
+    getEditControl: function(key, schema) {
+      var opt, options;
+      switch (schema.type) {
+        case "Text":
+          return React.createElement("input", {
+            "ref": key,
+            "type": "text",
+            "valueLink": this.linkState(key),
+            "className": "form-control",
+            "placeholder": schema.title
+          });
+        case "Select":
+          options = (function() {
+            var i, len, ref, results;
+            ref = schema.options;
+            results = [];
+            for (i = 0, len = ref.length; i < len; i++) {
+              opt = ref[i];
+              results.push(React.createElement("option", {
+                "value": opt.val
+              }, opt.label));
+            }
+            return results;
+          })();
+          return React.createElement("select", {
+            "ref": key,
+            "ref": "input",
+            "valueLink": this.linkState(key),
+            "className": 'form-control'
+          }, options);
+        case "DateTime":
+          return React.createElement("input", {
+            "className": "form-control",
+            "ref": key,
+            "type": "text",
+            "valueLink": this.linkState(key),
+            "readOnly": "readonly"
+          });
+        default:
+          return React.createElement("input", {
+            "ref": key,
+            "type": "text",
+            "valueLink": this.linkState(k),
+            "className": "form-control",
+            "placeholder": schema.title
+          });
+      }
+    },
+    componentDidMount: function() {
+      debugger;
+      var dateTimeEl, k, ref, results, v;
+      ref = this.props.model.schema;
+      results = [];
+      for (k in ref) {
+        if (!hasProp.call(ref, k)) continue;
+        v = ref[k];
+        if (v.type === "DateTime") {
+          dateTimeEl = $(React.findDOMNode(this.refs[k]));
+          results.push(dateTimeEl.datetimepicker({
+            format: v.format,
+            language: "zh-CN",
+            weekStart: 1,
+            todayBtn: 1,
+            autoclose: 1,
+            todayHighLight: 1,
+            startView: 2,
+            minView: 2,
+            forceParse: 0,
+            todayBtn: true,
+            pickerPosition: "bottom-right"
+          }));
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    }
+  };
+
   ModalForm = React.createClass({
-    mixins: [React.addons.LinkedStateMixin],
+    mixins: [React.addons.LinkedStateMixin, EditControlMinin],
     getInitialState: function() {
       var k, ref, state, v;
       state = {};
@@ -117,13 +197,7 @@
             "className": "col-sm-4 control-label"
           }, v.title), React.createElement("div", {
             "className": "col-sm-8"
-          }, React.createElement("input", {
-            "ref": k,
-            "type": "text",
-            "valueLink": this.linkState(k),
-            "className": "form-control",
-            "placeholder": v.title
-          }))));
+          }, this.getEditControl(k, v))));
         }
         return results;
       }).call(this);

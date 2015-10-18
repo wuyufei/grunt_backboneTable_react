@@ -1,5 +1,44 @@
+EditControlMinin =
+  getEditControl :(key,schema)->
+    switch schema.type
+      when "Text"
+        <input  ref={key} type="text" valueLink={@linkState(key)}
+        className="form-control" placeholder={schema.title} ></input>
+      when "Select"
+        options = for opt in schema.options
+          <option value={opt.val}>{opt.label}</option>
+        <select ref={key} ref="input" valueLink={@linkState(key)}
+          className='form-control' >
+          {options}
+        </select>
+      when "DateTime"
+        <input  className="form-control"  ref={key} type="text" valueLink={@linkState(key)}  readOnly="readonly"/>
+      else
+        <input  ref={key} type="text" valueLink={@linkState(k)}
+        className="form-control" placeholder={schema.title} ></input>
+
+  componentDidMount:->
+    debugger
+    for own k,v of @props.model.schema
+      if v.type is "DateTime"
+        dateTimeEl = $ React.findDOMNode(@refs[k])
+        dateTimeEl.datetimepicker
+            format:v.format
+            language:"zh-CN"
+            weekStart:1
+            todayBtn:1
+            autoclose:1
+            todayHighLight: 1
+            startView: 2
+            minView: 2
+            forceParse: 0
+            todayBtn: true
+            pickerPosition:"bottom-right"
+
+
+
 ModalForm = React.createClass
-  mixins:[React.addons.LinkedStateMixin]
+  mixins:[React.addons.LinkedStateMixin,EditControlMinin]
   getInitialState:->
     state = {}
     for own k,v of @props.model.schema
@@ -54,11 +93,12 @@ ModalForm = React.createClass
           control.popover("destroy") if control.data("bs.popover")?
 
   render:->
+    #<input  ref={k} type="text" valueLink={@linkState(k)} className="form-control" placeholder={v.title} ></input>
     fieldEls = for own k,v of @props.model.schema
       <div className="col-md-6 col-sm-12" style={{marginTop:10}}>
         <label className="col-sm-4 control-label">{v.title}</label>
         <div className="col-sm-8">
-          <input  ref={k} type="text" valueLink={@linkState(k)} className="form-control" placeholder={v.title} ></input>
+          {@getEditControl(k,v)}
         </div>
       </div>
     <div className='modal fade'>

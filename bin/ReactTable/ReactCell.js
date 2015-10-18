@@ -52,6 +52,7 @@
         }));
       } else {
         return React.createElement("td", {
+          "onDoubleClick": this.props.cellDoubleClick,
           "onClick": this.props.cellClick
         }, this.state.value);
       }

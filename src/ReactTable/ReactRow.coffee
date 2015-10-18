@@ -21,7 +21,6 @@ Row = React.createClass
           btnProps.icon = "glyphicon glyphicon-list"
       btnProps
   render:->
-    debugger
     that = @
     schema = @props.model.schema
     validation = @props.model.validation
@@ -71,9 +70,11 @@ Row = React.createClass
         error:@props.error
         isEdit:if @props.edit is true and @props.editCell is k then true else false
         cellClick:_.partial(@props.cellClick,k)
+        cellDoubleClick:_.partial(@props.cellDoubleClick,k)
         cellEndEdit:_.partial(@props.cellEndEdit,k)
         required:validation[k]?.required
         schema:v
+
       switch v.type
         when "Text"
           <TextCell key={k} {...cellProps}/>
