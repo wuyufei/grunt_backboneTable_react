@@ -33,7 +33,7 @@ ActionMixin =
     return if @cellEndEdit?() is false
     @props.detailButtonClick?(e,model)
     unless e.isDefaultPrevented()
-      React.render <ModalForm model={model} headerText={"详情"}/>,$("<div>").appendTo($("body"))[0]
+      React.render <ModalForm readonly={true} model={model} headerText={"详情"}/>,$("<div>").appendTo($("body"))[0]
   editButtonClick:(model,e)->
     return if @cellEndEdit?() is false
     @props.detailButtonClick?(e,model)
@@ -71,6 +71,9 @@ Table = React.createClass
       editRow:null
       editCell:null
       cellError:null
+
+    getDefaultProps:->
+      enableSort:true
     componentWillMount:->
       that = @
       @sortedModels = @sortCollection()
@@ -88,6 +91,7 @@ Table = React.createClass
         editCell:null
         cellError:null
     columnHeaderClickHandler:(e)->
+      return unless @props.enableSort
       key = e.target.dataset.column
       if key is @state.sortField
         sortDir = if @state.sortDir is "asc" then "desc" else "asc"
@@ -101,20 +105,16 @@ Table = React.createClass
           editCell:null
           cellError:null
     sortCollection:->
-      ###if @state.sortField?
-        sortField = @state.sortField
-        sortDir = @state.sortDir
-        sortModels = @props.collection.models.sort (a,b)->
-          a = a.get(sortField)
-          b = b.get(sortField)
-          if a>b
-            if sortDir is "asc" then 1 else -1
-          else if a is b
-            0
-          else
-            if sortDir is "asc" then -1 else 1
-      else###
-      @props.collection.models
+      that = @
+      sortModels = null
+      if @props.enableSort and  @state.sortField
+        sortModels = _.sortBy @props.collection.models,(model)->
+              model.get(that.state.sortField)
+        if @state.sortDir is "desc"
+          sortModels.reverse()
+      else
+        sortModels = @props.collection.models
+      sortModels
 
     cellBeginEdit:(model,key)->
       if @state.editRow
@@ -130,7 +130,6 @@ Table = React.createClass
           cellError:null
 
     cellEndEdit:->
-
       if @state.editRow
         editRow = @refs[@state.editRow]
         editCell = editRow.refs[@state.editCell]
@@ -182,7 +181,7 @@ Table = React.createClass
     render:->
       that = @
       sortModels = @sortCollection()
-      pageCollection = @sortedModels[@state.currentPage*10..(@state.currentPage+1)*10-1]
+      pageCollection = sortModels[@state.currentPage*10..(@state.currentPage+1)*10-1]
       rows = for model in pageCollection
         rowProps =
           model:model

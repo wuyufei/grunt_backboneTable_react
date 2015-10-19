@@ -59,6 +59,7 @@
       }
       if (!e.isDefaultPrevented()) {
         return React.render(React.createElement(ModalForm, {
+          "readonly": true,
           "model": model,
           "headerText": "详情"
         }), $("<div>").appendTo($("body"))[0]);
@@ -122,6 +123,11 @@
         cellError: null
       };
     },
+    getDefaultProps: function() {
+      return {
+        enableSort: true
+      };
+    },
     componentWillMount: function() {
       var that;
       that = this;
@@ -141,6 +147,9 @@
     },
     columnHeaderClickHandler: function(e) {
       var key, sortDir;
+      if (!this.props.enableSort) {
+        return;
+      }
       key = e.target.dataset.column;
       if (key === this.state.sortField) {
         sortDir = this.state.sortDir === "asc" ? "desc" : "asc";
@@ -157,22 +166,20 @@
       });
     },
     sortCollection: function() {
-
-      /*if @state.sortField?
-        sortField = @state.sortField
-        sortDir = @state.sortDir
-        sortModels = @props.collection.models.sort (a,b)->
-          a = a.get(sortField)
-          b = b.get(sortField)
-          if a>b
-            if sortDir is "asc" then 1 else -1
-          else if a is b
-            0
-          else
-            if sortDir is "asc" then -1 else 1
-      else
-       */
-      return this.props.collection.models;
+      var sortModels, that;
+      that = this;
+      sortModels = null;
+      if (this.props.enableSort && this.state.sortField) {
+        sortModels = _.sortBy(this.props.collection.models, function(model) {
+          return model.get(that.state.sortField);
+        });
+        if (this.state.sortDir === "desc") {
+          sortModels.reverse();
+        }
+      } else {
+        sortModels = this.props.collection.models;
+      }
+      return sortModels;
     },
     cellBeginEdit: function(model, key) {
       if (this.state.editRow) {
@@ -269,7 +276,7 @@
       var containerStyle, model, pageCollection, rowProps, rows, sortModels, that;
       that = this;
       sortModels = this.sortCollection();
-      pageCollection = this.sortedModels.slice(this.state.currentPage * 10, +((this.state.currentPage + 1) * 10 - 1) + 1 || 9e9);
+      pageCollection = sortModels.slice(this.state.currentPage * 10, +((this.state.currentPage + 1) * 10 - 1) + 1 || 9e9);
       rows = (function() {
         var i, len, results;
         results = [];

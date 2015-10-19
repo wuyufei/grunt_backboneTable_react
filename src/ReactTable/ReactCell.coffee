@@ -34,6 +34,8 @@ TextCell = React.createClass
       else
         <td  onDoubleClick={@props.cellDoubleClick} onClick={@props.cellClick}>{@state.value}</td>
 
+
+
 SelectCell = React.createClass
     mixins:[React.addons.PureRenderMixin,React.addons.LinkedStateMixin,CellMixin]
     getDisplayValue:->

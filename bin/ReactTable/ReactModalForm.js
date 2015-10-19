@@ -4,13 +4,16 @@
 
   EditControlMinin = {
     getEditControl: function(key, schema) {
-      var opt, options;
+      debugger;
+      var opt, options, readonly;
+      readonly = this.props.readonly || schema.readonly;
       switch (schema.type) {
         case "Text":
           return React.createElement("input", {
             "ref": key,
             "type": "text",
             "valueLink": this.linkState(key),
+            "readOnly": (readonly ? true : false),
             "className": "form-control",
             "placeholder": schema.title
           });
@@ -31,6 +34,7 @@
             "ref": key,
             "ref": "input",
             "valueLink": this.linkState(key),
+            "disabled": (readonly ? true : false),
             "className": 'form-control'
           }, options);
         case "DateTime":
@@ -59,24 +63,23 @@
       for (k in ref) {
         if (!hasProp.call(ref, k)) continue;
         v = ref[k];
-        if (v.type === "DateTime") {
-          dateTimeEl = $(React.findDOMNode(this.refs[k]));
-          results.push(dateTimeEl.datetimepicker({
-            format: v.format,
-            language: "zh-CN",
-            weekStart: 1,
-            todayBtn: 1,
-            autoclose: 1,
-            todayHighLight: 1,
-            startView: 2,
-            minView: 2,
-            forceParse: 0,
-            todayBtn: true,
-            pickerPosition: "bottom-right"
-          }));
-        } else {
-          results.push(void 0);
+        if (!(this.props.readonly !== true && v.readonly !== true && v.type === "DateTime")) {
+          continue;
         }
+        dateTimeEl = $(React.findDOMNode(this.refs[k]));
+        results.push(dateTimeEl.datetimepicker({
+          format: v.format,
+          language: "zh-CN",
+          weekStart: 1,
+          todayBtn: 1,
+          autoclose: 1,
+          todayHighLight: 1,
+          startView: 2,
+          minView: 2,
+          forceParse: 0,
+          todayBtn: true,
+          pickerPosition: "bottom-right"
+        }));
       }
       return results;
     }
@@ -231,12 +234,12 @@
         "type": "button",
         "className": "btn btn-default",
         "data-dismiss": "modal"
-      }, "\u5173\u95ed"), React.createElement("button", {
+      }, "\u5173\u95ed"), (this.props.readonly ? null : React.createElement("button", {
         "ref": "saveBtn",
         "type": "button",
         "className": "btn btn-primary",
         "onClick": this.saveHandle
-      }, "\u4fdd\u5b58")))));
+      }, "\u4fdd\u5b58"))))));
     }
   });
 

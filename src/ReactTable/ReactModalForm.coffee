@@ -1,13 +1,15 @@
 EditControlMinin =
   getEditControl :(key,schema)->
+    debugger
+    readonly = @props.readonly || schema.readonly
     switch schema.type
       when "Text"
-        <input  ref={key} type="text" valueLink={@linkState(key)}
+        <input  ref={key} type="text" valueLink={@linkState(key)} readOnly={if readonly then true else false}
         className="form-control" placeholder={schema.title} ></input>
       when "Select"
         options = for opt in schema.options
           <option value={opt.val}>{opt.label}</option>
-        <select ref={key} ref="input" valueLink={@linkState(key)}
+        <select ref={key} ref="input" valueLink={@linkState(key)} disabled={if readonly then true else false}
           className='form-control' >
           {options}
         </select>
@@ -19,8 +21,7 @@ EditControlMinin =
 
   componentDidMount:->
     debugger
-    for own k,v of @props.model.schema
-      if v.type is "DateTime"
+    for own k,v of @props.model.schema when @props.readonly isnt true and v.readonly isnt true and v.type is "DateTime"
         dateTimeEl = $ React.findDOMNode(@refs[k])
         dateTimeEl.datetimepicker
             format:v.format
@@ -119,7 +120,7 @@ ModalForm = React.createClass
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-default" data-dismiss="modal">关闭</button>
-            <button ref={"saveBtn"} type="button" className="btn btn-primary" onClick={@saveHandle}>保存</button>
+            {if @props.readonly then null else <button ref={"saveBtn"} type="button" className="btn btn-primary" onClick={@saveHandle}>保存</button>}
           </div>
         </div>
       </div>
