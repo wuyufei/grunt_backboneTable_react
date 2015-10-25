@@ -240,10 +240,10 @@
     }
   });
 
-  window.TextCell = TextCell;
-
-  window.SelectCell = SelectCell;
-
-  window.DateTimeCell = DateTimeCell;
+  window.CellClasses = {
+    Text: TextCell,
+    Select: SelectCell,
+    DateTime: DateTimeCell
+  };
 
 }).call(this);

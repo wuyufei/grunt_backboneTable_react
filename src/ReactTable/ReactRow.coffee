@@ -76,16 +76,8 @@ Row = React.createClass
         required:validation[k]?.required
         schema:v
 
-      switch v.type
-        when "Text"
-          <TextCell key={k} {...cellProps}/>
-        when "Select"
-          <SelectCell key={k} {...cellProps}/>
-        when "DateTime"
-          <DateTimeCell key={k} {...cellProps}/>
-        else
-          <TextCell key={k} {...cellProps}/>
-      #if @state.editCell is k
+      Cell = CellClasses[v.type]
+      <Cell key={k} {...cellProps}/>
     <tr className={if @props.selected then "info" else ""}>{cells}{buttonCell}</tr>
 
 window.Row = Row

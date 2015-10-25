@@ -4,22 +4,46 @@
   GXTable = React.createClass({
     refreshHandle: function(e) {},
     showReasonHandle: function(e) {},
-    renderColumns: function() {
-      var i, monthDays, tds;
+    renderColumns: function(isHeader) {
+      var angle, class1, class2, i, lineStyle, monthDays, ref, ref1, tds, text1, text2;
+      ref = ["日期", "姓名", "text-right", "text-left", 31], text1 = ref[0], text2 = ref[1], class1 = ref[2], class2 = ref[3], angle = ref[4];
+      if (!isHeader) {
+        ref1 = [text2, text1, class2, class1], text1 = ref1[0], text2 = ref1[1], class1 = ref1[2], class2 = ref1[3];
+        angle = -angle;
+      }
       monthDays = 31;
       tds = (function() {
-        var j, ref, results;
+        var j, ref2, results;
         results = [];
-        for (i = j = 1, ref = monthDays; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
+        for (i = j = 1, ref2 = monthDays; 1 <= ref2 ? j <= ref2 : j >= ref2; i = 1 <= ref2 ? ++j : --j) {
           results.push(React.createElement("th", null, i));
         }
         return results;
       })();
-      React.createElement("tr", null, React.createElement("th", null, "\u5e8f"), React.createElement("th", null, "\u59d3\u540d"), React.createElement("th", null, "\u65e5\u671f"), tds);
-      return React.createElement("tr", null);
+      lineStyle = {
+        top: "50%",
+        bottom: "50%",
+        left: 0,
+        right: 0,
+        position: "absolute",
+        backgroundColor: "rgb(221, 221, 221)",
+        height: 1,
+        transform: "rotate(" + angle + "deg)"
+      };
+      return React.createElement("tr", null, React.createElement("th", null, "\u5e8f"), React.createElement("th", {
+        "style": {
+          padding: 0,
+          position: "relative"
+        }
+      }, React.createElement("div", {
+        "style": lineStyle
+      }), React.createElement("div", {
+        "className": class1
+      }, text1), React.createElement("div", {
+        "className": class2
+      }, text2)), tds);
     },
     renderRows: function() {
-      debugger;
       var index, j, len, model, monthDays, ref, results;
       monthDays = 31;
       index = 0;
@@ -29,6 +53,7 @@
         model = ref[j];
         index++;
         results.push(React.createElement(GXRow, {
+          "menu": menu,
           "monthDays": monthDays,
           "model": model,
           "index": index
@@ -67,7 +92,6 @@
       }, "\u603b\u8ba1"), cells);
     },
     render: function() {
-      debugger;
       var monthDays, yearMoonth;
       monthDays = 31;
       yearMoonth = this.props.year + "-" + this.props.month;
@@ -81,17 +105,16 @@
       }, "\u5237\u65b0"), React.createElement("button", {
         "onClick": this.showReasonHandle,
         "className": "btn btn-primary pull-right"
-      }, "\u663e\u793a\u8bf7\u5047\u4e8b\u7531"), React.createElement("h5", null, "\u5f15\u822a\u5458\u8f6e\u4f11\u660e\u7ec6\u8868(", yearMoonth, ")")), React.createElement("div", {
+      }, "\u663e\u793a\u8bf7\u5047\u4e8b\u7531"), React.createElement("h5", null, "\u5f15\u822a\u5458\u516c\u4f11\u8f6e\u4f11\u660e\u7ec6\u8868(", yearMoonth, ")")), React.createElement("div", {
         "className": "table-responsive"
       }, React.createElement("table", {
         "className": "table table-bordered"
-      }, React.createElement("thead", null, this.renderColumns()), React.createElement("tbody", null, this.renderRows(), this.renderFooter()), React.createElement("thead", null, this.renderColumns()))));
+      }, React.createElement("thead", null, this.renderColumns(true)), React.createElement("tbody", null, this.renderRows(), this.renderFooter()), React.createElement("thead", null, this.renderColumns(false)))));
     }
   });
 
   GXRow = React.createClass({
     render: function() {
-      debugger;
       var cells, day, i, index, value;
       index = 1;
       day = this.props.model.get("GXRQ").slice(-2);
@@ -101,12 +124,13 @@
         results = [];
         for (i = j = 1, ref = this.props.monthDays; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
           if (day === i) {
-            value = true;
+            value = this.props.model.get("type");
           } else {
-            value = false;
+            value = "";
           }
           results.push(React.createElement(GXCell, {
-            "value": value
+            "value": value,
+            "menu": this.props.menu
           }));
         }
         return results;
@@ -116,17 +140,58 @@
   });
 
   GXCell = React.createClass({
+    componentDidMount: function() {
+      debugger;
+      var el;
+      el = $(this.getDOMNode());
+      return el.contextmenu({
+        target: $("#menu"),
+        onItem: function(context, e) {
+          var target;
+          target = $(e.target);
+          if (target.text() === "取消") {
+            return console.log("取消");
+          }
+        }
+      });
+    },
+    componentDidUnmount: function() {
+      var el;
+      el = $(this.getDOMNode());
+      return el.contextmenu("destroy");
+    },
+    mouseOverHandle: function() {
+      var el;
+      el = $(this.getDOMNode());
+      return el.css("backgroundColor", "#f5f5f5");
+    },
+    mouseLeaveHandle: function() {
+      var el;
+      el = $(this.getDOMNode());
+      return el.css("backgroundColor", "#fff");
+    },
     render: function() {
-      return React.createElement("td", null, (this.props.value ? "1" : ""));
+      var style;
+      style = {
+        color: this.props.value === "G" ? "blue" : "black"
+      };
+      return React.createElement("td", {
+        "className": "text-center",
+        "onMouseOver": this.mouseOverHandle,
+        "onMouseLeave": this.mouseLeaveHandle
+      }, React.createElement("span", {
+        "style": style
+      }, this.props.value));
     }
   });
 
   template = {
     'gxsqList|20': [
       {
-        'name': '@cname()',
-        'GXRQ': '@date(2015-01-dd)',
-        'SQSJ': '@date(2015-01-dd)'
+        name: '@cname',
+        GXRQ: '@date(2015-01-dd)',
+        SQSJ: '@date(2015-01-dd)',
+        'type|1': ["G", "L"]
       }
     ]
   };
@@ -159,8 +224,6 @@
     month: 1,
     collection: list
   };
-
-  debugger;
 
   React.render(React.createElement(GXTable, React.__spread({}, tableProps)), document.getElementById('container'));
 

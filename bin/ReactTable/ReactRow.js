@@ -32,7 +32,7 @@
       return btnProps;
     },
     render: function() {
-      var btn, btnProps, buttonCell, buttonCellWidth, buttons, buttonsEl, cellProps, cells, editCellStyle, k, list, listEl, ref, schema, splitButton, splitButtonEl, that, v, validation;
+      var Cell, btn, btnProps, buttonCell, buttonCellWidth, buttons, buttonsEl, cellProps, cells, editCellStyle, k, list, listEl, ref, schema, splitButton, splitButtonEl, that, v, validation;
       that = this;
       schema = this.props.model.schema;
       validation = this.props.model.validation;
@@ -129,27 +129,10 @@
             required: (ref1 = validation[k]) != null ? ref1.required : void 0,
             schema: v
           };
-          switch (v.type) {
-            case "Text":
-              results.push(React.createElement(TextCell, React.__spread({
-                "key": k
-              }, cellProps)));
-              break;
-            case "Select":
-              results.push(React.createElement(SelectCell, React.__spread({
-                "key": k
-              }, cellProps)));
-              break;
-            case "DateTime":
-              results.push(React.createElement(DateTimeCell, React.__spread({
-                "key": k
-              }, cellProps)));
-              break;
-            default:
-              results.push(React.createElement(TextCell, React.__spread({
-                "key": k
-              }, cellProps)));
-          }
+          Cell = CellClasses[v.type];
+          results.push(React.createElement(Cell, React.__spread({
+            "key": k
+          }, cellProps)));
         }
         return results;
       }).call(this);

@@ -1,29 +1,40 @@
 GXTable = React.createClass
   refreshHandle:(e)->
   showReasonHandle:(e)->
-  renderColumns:->
+  renderColumns:(isHeader)->
+    [text1,text2,class1,class2,angle]=["日期","姓名","text-right","text-left",31]
+    unless isHeader
+      [text1,text2,class1,class2] = [text2,text1,class2,class1]
+      angle = -angle
+
     monthDays = 31
     tds = for i in [1..monthDays]
-            <th colspan="2">{i}</th>
-    nullTds= for i in [1..monthDays]
-                <th></th>
-    result = []
-    result.push
-          <tr>
-            <th colspan="2">序</th>
-            <th>姓名</th>
-            {tds}
-          </tr>
-    result.push <tr><th/><th>日期</th>{nullTds}</tr>
-    result
+            <th>{i}</th>
+    lineStyle =
+      top:"50%"
+      bottom:"50%"
+      left:0
+      right:0
+      position:"absolute"
+      backgroundColor:"rgb(221, 221, 221)"
+      height:1
+      transform: "rotate(#{angle}deg)"
 
+    <tr >
+      <th>序</th>
+      <th style={{padding:0,position:"relative"}}>
+        <div style={lineStyle}></div>
+        <div className={class1}>{text1}</div>
+        <div className={class2}>{text2}</div>
+      </th>
+      {tds}
+    </tr>
   renderRows:->
-    debugger
     monthDays = 31
     index = 0
     for model in @props.collection.models
       index++
-      <GXRow monthDays={monthDays} model={model} index={index}/>
+      <GXRow menu={menu} monthDays={monthDays} model={model} index={index}/>
 
   renderFooter:->
     monthDays = 31
@@ -38,26 +49,25 @@ GXTable = React.createClass
       <td></td><td style={{fontWeigh:"bold"}}>总计</td>{cells}
     </tr>
   render:->
-    debugger
     monthDays = 31
     yearMoonth = @props.year + "-" + @props.month
     <div className="panel panel-info">
       <div className="panel-heading text-center">
         <button onClick={@refreshHandle} className="btn btn-success pull-left">刷新</button>
         <button onClick={@showReasonHandle} className="btn btn-primary pull-right">显示请假事由</button>
-        <h5>引航员轮休明细表({yearMoonth})</h5>
+        <h5>引航员公休轮休明细表({yearMoonth})</h5>
       </div>
       <div className="table-responsive">
 	     <table className="table table-bordered">
-          <thead>
-            {@renderColumns()}
+          <thead >
+            {@renderColumns(true)}
           </thead>
           <tbody>
             {@renderRows()}
             {@renderFooter()}
           </tbody>
           <thead>
-            {@renderColumns()}
+            {@renderColumns(false)}
           </thead>
         </table>
       </div>
@@ -65,29 +75,54 @@ GXTable = React.createClass
 
 GXRow = React.createClass
   render:->
-    debugger
     index = 1
     day = @props.model.get("GXRQ")[-2..]
     day = parseInt(day)
     cells = for i in [1..@props.monthDays]
-      if day is i then value=true else value=false
-      <GXCell value={value} />
+              if day is i
+                value=@props.model.get("type")
+              else
+                value=""
+              <GXCell value={value} menu={@props.menu}/>
+
     <tr>
       <td>{@props.index}</td><td>{@props.model.get("name")}</td>
       {cells}
     </tr>
 
 GXCell = React.createClass
+  componentDidMount:->
+    debugger
+    el = $(@getDOMNode())
+    el.contextmenu
+      target:$("#menu")
+      onItem:(context,e)->
+        target = $(e.target)
+        if target.text() is "取消"
+          console.log("取消")
+  componentDidUnmount:->
+    el = $(@getDOMNode())
+    el.contextmenu("destroy")
+  mouseOverHandle:->
+    el = $(@getDOMNode())
+    el.css("backgroundColor","#f5f5f5")
+  mouseLeaveHandle:->
+    el = $(@getDOMNode())
+    el.css("backgroundColor","#fff")
   render:->
-    <td>{if @props.value then "1" else ""}</td>
-
+     style =
+       color:if @props.value is "G" then "blue" else "black"
+     <td className="text-center" onMouseOver={@mouseOverHandle} onMouseLeave={@mouseLeaveHandle}>
+      <span style={style}>{@props.value}</span>
+     </td>
 
 template =
-		'gxsqList|20': [{
-			'name': '@cname()',
-			'GXRQ': '@date(2015-01-dd)',
-			'SQSJ': '@date(2015-01-dd)'
-		}]
+ 'gxsqList|20':[{
+   name:'@cname'
+   GXRQ:'@date(2015-01-dd)'
+   SQSJ:'@date(2015-01-dd)'
+   'type|1':["G","L"]
+}]
 
 Mock.mock "t.tt", "get",(options)->
     		gxsqList = Mock.mock(template).gxsqList
@@ -112,6 +147,5 @@ tableProps =
   year:2015
   month:1
   collection:list
-debugger
 React.render <GXTable {...tableProps}></GXTable>,
   document.getElementById 'container'

@@ -133,7 +133,10 @@ DateTimeCell = React.createClass
         if input.data("datetimepicker")
           input.datetimepicker("remove")
           console.log("remove")
-
-window.TextCell=TextCell
-window.SelectCell = SelectCell
-window.DateTimeCell = DateTimeCell
+window.CellClasses = 
+          Text:TextCell
+          Select:SelectCell
+          DateTime:DateTimeCell
+#window.TextCell=TextCell
+#window.SelectCell = SelectCell
+#window.DateTimeCell = DateTimeCell
