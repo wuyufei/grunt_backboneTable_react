@@ -166,18 +166,21 @@
       });
     },
     sortCollection: function() {
+      debugger;
       var sortModels, that;
       that = this;
-      sortModels = null;
-      if (this.props.enableSort && this.state.sortField) {
-        sortModels = _.sortBy(this.props.collection.models, function(model) {
-          return model.get(that.state.sortField);
-        });
-        if (this.state.sortDir === "desc") {
-          sortModels.reverse();
+      sortModels = _.clone(this.props.collection.models);
+      sortModels.sort(function(a, b) {
+        a = a.get(that.state.sortField);
+        b = b.get(that.state.sortField);
+        if (_.isString(a)) {
+          return a.localeCompare(b);
+        } else {
+          return a - b;
         }
-      } else {
-        sortModels = this.props.collection.models;
+      });
+      if (this.state.sortDir === "desc") {
+        sortModels.reverse();
       }
       return sortModels;
     },
@@ -275,6 +278,7 @@
     render: function() {
       var containerStyle, model, pageCollection, rowProps, rows, sortModels, that;
       that = this;
+      debugger;
       sortModels = this.sortCollection();
       pageCollection = sortModels.slice(this.state.currentPage * 10, +((this.state.currentPage + 1) * 10 - 1) + 1 || 9e9);
       rows = (function() {

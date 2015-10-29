@@ -105,16 +105,20 @@ Table = React.createClass
           editCell:null
           cellError:null
     sortCollection:->
-      that = @
-      sortModels = null
-      if @props.enableSort and  @state.sortField
-        sortModels = _.sortBy @props.collection.models,(model)->
-              model.get(that.state.sortField)
+        debugger
+        that = @
+        sortModels = _.clone @props.collection.models
+        sortModels.sort (a,b)->
+          a = a.get(that.state.sortField)
+          b = b.get(that.state.sortField)
+          if _.isString(a)
+            return a.localeCompare(b);
+          else
+            return a-b
         if @state.sortDir is "desc"
           sortModels.reverse()
-      else
-        sortModels = @props.collection.models
-      sortModels
+        sortModels
+
 
     cellBeginEdit:(model,key)->
       if @state.editRow
@@ -180,6 +184,7 @@ Table = React.createClass
 
     render:->
       that = @
+      debugger
       sortModels = @sortCollection()
       pageCollection = sortModels[@state.currentPage*10..(@state.currentPage+1)*10-1]
       rows = for model in pageCollection

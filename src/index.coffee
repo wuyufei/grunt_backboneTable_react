@@ -65,7 +65,38 @@ ReactTable = window.ReactTable
 users.fetch
   reset:true
   async:false
-tableProps =
+
+TableView = Backbone.View.extend
+  initialize:(options)->
+    debugger
+    this.listenTo @collection,"reset add remove change",@render.bind(this)
+    this.options = {}
+    _.extend this.options,options
+  render:->
+    debugger
+    React.render <ReactTable {...@options}></ReactTable>,
+      @el
+
+table = new TableView
+  el:$("#container")
+  collection:users
+  cellClick:(model,key)->
+    debugger
+    #alert("单击")
+  cellDoubleClick:(model,key)->
+    debugger
+    alert("双击")
+  buttons:[
+    {text:"详情", command:"detail"}
+    {text:"编辑", command:"edit"}
+    {text:"删除", command:"delete"}
+    {text:"删除", command:"delete"}
+    {text:"删除", command:"delete"}
+  ]
+
+table.render()
+
+###tableProps =
   collection:users
   cellClick:(model,key)->
     debugger
@@ -81,4 +112,4 @@ tableProps =
     {text:"删除", command:"delete"}
   ]
 React.render <ReactTable {...tableProps}></ReactTable>,
-  document.getElementById 'container'
+  document.getElementById 'container'###

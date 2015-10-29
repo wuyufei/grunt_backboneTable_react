@@ -50,7 +50,7 @@ Row = React.createClass
                           <button className={btnProps.className} onClick={btnProps.handleClick}>
                             <span className={btnProps.icon}></span> {btn.text}
                           </button>
-                          <button type="button" className="btn btn-xs btn-danger  dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          <button type="button" className="btn btn-xs btn-default  dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <span className="caret"></span>
                             <span className="sr-only">Toggle Dropdown</span>
                           </button>

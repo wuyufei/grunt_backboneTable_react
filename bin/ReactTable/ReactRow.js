@@ -91,7 +91,7 @@
             "className": btnProps.icon
           }), " ", btn.text), React.createElement("button", {
             "type": "button",
-            "className": "btn btn-xs btn-danger  dropdown-toggle",
+            "className": "btn btn-xs btn-default  dropdown-toggle",
             "data-toggle": "dropdown",
             "aria-haspopup": "true",
             "aria-expanded": "false"

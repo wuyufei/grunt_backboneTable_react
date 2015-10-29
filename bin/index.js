@@ -1,5 +1,5 @@
 (function() {
-  var ReactTable, User, Users, tableProps, template, users;
+  var ReactTable, TableView, User, Users, table, template, users;
 
   _.extend(Backbone.Model.prototype, Backbone.Validation.mixin);
 
@@ -97,7 +97,21 @@
     async: false
   });
 
-  tableProps = {
+  TableView = Backbone.View.extend({
+    initialize: function(options) {
+      debugger;
+      this.listenTo(this.collection, "reset add remove change", this.render.bind(this));
+      this.options = {};
+      return _.extend(this.options, options);
+    },
+    render: function() {
+      debugger;
+      return React.render(React.createElement(ReactTable, React.__spread({}, this.options)), this.el);
+    }
+  });
+
+  table = new TableView({
+    el: $("#container"),
     collection: users,
     cellClick: function(model, key) {
       debugger;
@@ -124,8 +138,28 @@
         command: "delete"
       }
     ]
-  };
+  });
 
-  React.render(React.createElement(ReactTable, React.__spread({}, tableProps)), document.getElementById('container'));
+  table.render();
+
+
+  /*tableProps =
+    collection:users
+    cellClick:(model,key)->
+      debugger
+      #alert("单击")
+    cellDoubleClick:(model,key)->
+      debugger
+      alert("双击")
+    buttons:[
+      {text:"详情", command:"detail"}
+      {text:"编辑", command:"edit"}
+      {text:"删除", command:"delete"}
+      {text:"删除", command:"delete"}
+      {text:"删除", command:"delete"}
+    ]
+  React.render <ReactTable {...tableProps}></ReactTable>,
+    document.getElementById 'container'
+   */
 
 }).call(this);
