@@ -22,7 +22,7 @@
       }
       debugger;
       this.setState({
-        selectRow: model.cid
+        selectedRow: model.cid
       });
       return typeof (base = this.props).cellClick === "function" ? base.cellClick(model, key) : void 0;
     },
@@ -81,32 +81,37 @@
       }
     },
     deleteButtonClick: function(model, e) {
-      var modalInfoProps;
+      var base, modalInfoProps;
       if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
         return;
       }
-      modalInfoProps = {
-        msg: "是否确认删除？",
-        confirmButtonClick: function(event) {
-          model.destroy({
-            success: function() {
-              var props;
-              props = {
-                msg: "删除成功",
-                autoClose: true
-              };
-              return React.render(React.createElement(ModalInfo, React.__spread({}, modalInfoProps)), $("<div>").appendTo($("body"))[0]);
-            },
-            error: function(model, response, options) {
-              event.preventDefault();
-              return event.error = options.errorThrown;
-            },
-            wait: true,
-            async: false
-          });
-        }
-      };
-      return React.render(React.createElement(ModalInfo, React.__spread({}, modalInfoProps)), $("<div>").appendTo($("body"))[0]);
+      if (typeof (base = this.props).detailButtonClick === "function") {
+        base.detailButtonClick(e, model);
+      }
+      if (!e.isDefaultPrevented()) {
+        modalInfoProps = {
+          msg: "是否确认删除？",
+          confirmButtonClick: function(event) {
+            model.destroy({
+              success: function() {
+                var props;
+                props = {
+                  msg: "删除成功",
+                  autoClose: true
+                };
+                return React.render(React.createElement(ModalInfo, React.__spread({}, modalInfoProps)), $("<div>").appendTo($("body"))[0]);
+              },
+              error: function(model, response, options) {
+                event.preventDefault();
+                return event.error = options.errorThrown;
+              },
+              wait: true,
+              async: false
+            });
+          }
+        };
+        return React.render(React.createElement(ModalInfo, React.__spread({}, modalInfoProps)), $("<div>").appendTo($("body"))[0]);
+      }
     }
   };
 
@@ -114,7 +119,15 @@
     mixins: [React.addons.PureRenderMixin, ActionMixin],
     getInitialState: function() {
       return {
-        selectRow: null,
+        selectedRow: (function(_this) {
+          return function() {
+            if (_this.props.collection.length > 0) {
+              return _this.props.collection.at(0).cid;
+            } else {
+              return null;
+            }
+          };
+        })(this)(),
         sortField: null,
         sortDir: "asc",
         currentPage: 0,
@@ -137,12 +150,20 @@
       });
     },
     componentWillUpdate: function(nextProps, nextState) {},
+    componentDidUpdate: function(prevProps, prevState) {
+      var model;
+      if (prevState.selectedRow !== this.state.selectedRow) {
+        model = this.props.collection.get(this.state.selectedRow);
+        return this.props.tableView.selectedRowChange(model);
+      }
+    },
     pageChange: function(page) {
       return this.setState({
         currentPage: page,
         editRow: null,
         editCell: null,
-        cellError: null
+        cellError: null,
+        selectedRow: null
       });
     },
     columnHeaderClickHandler: function(e) {
@@ -170,17 +191,19 @@
       var sortModels, that;
       that = this;
       sortModels = _.clone(this.props.collection.models);
-      sortModels.sort(function(a, b) {
-        a = a.get(that.state.sortField);
-        b = b.get(that.state.sortField);
-        if (_.isString(a)) {
-          return a.localeCompare(b);
-        } else {
-          return a - b;
+      if (this.state.sortField) {
+        sortModels.sort(function(a, b) {
+          a = a.get(that.state.sortField);
+          b = b.get(that.state.sortField);
+          if (_.isString(a)) {
+            return a.localeCompare(b);
+          } else {
+            return a - b;
+          }
+        });
+        if (this.state.sortDir === "desc") {
+          sortModels.reverse();
         }
-      });
-      if (this.state.sortDir === "desc") {
-        sortModels.reverse();
       }
       return sortModels;
     },
@@ -297,7 +320,7 @@
             editButtonClick: that.editButtonClick.bind(this, model),
             deleteButtonClick: that.deleteButtonClick.bind(this, model),
             buttons: that.props.buttons,
-            selected: that.state.selectRow === model.cid ? true : false,
+            selected: that.state.selectedRow === model.cid ? true : false,
             cellDoubleClick: this.cellDoubleClick.bind(this, model)
           };
           results.push(React.createElement(Row, React.__spread({

@@ -34,7 +34,8 @@
       name: {
         type: "Text",
         title: "姓名",
-        readonly: true
+        readonly: true,
+        readonlyOnModal: false
       },
       age: {
         type: "Text",
@@ -104,9 +105,18 @@
       this.options = {};
       return _.extend(this.options, options);
     },
+    selectedRowChange: function(model) {
+      return this.trigger("selectedRowChange", model);
+    },
     render: function() {
       debugger;
-      return React.render(React.createElement(ReactTable, React.__spread({}, this.options)), this.el);
+      return React.render(React.createElement(ReactTable, React.__spread({}, this.options, {
+        "tableView": this
+      })), this.el);
+    },
+    remove: function() {
+      React.unmountComponentAtNode(this.el);
+      return TableView.__super__.remove.apply(this, arguments);
     }
   });
 
@@ -120,19 +130,41 @@
       debugger;
       return alert("双击");
     },
+    addButtonClick: function(e) {
+      return e.preventDefault();
+    },
+    detailButtonClick: function(model, e) {
+      return e.preventDefault();
+    },
+    editButtonClick: function(model, e) {
+      return e.preventDefault();
+    },
+    deleteButtonClick: function(model, e) {
+      return e.preventDefault();
+    },
     buttons: [
       {
         text: "详情",
-        command: "detail"
+        command: "detail",
+        onClick: function(model) {
+          debugger;
+        }
       }, {
         text: "编辑",
-        command: "edit"
+        command: "edit",
+        onClick: function(model) {
+          debugger;
+        }
       }, {
         text: "删除",
         command: "delete"
       }, {
-        text: "删除",
-        command: "delete"
+        text: "审核",
+        command: "verify",
+        onClick: function(model) {
+          debugger;
+          return alert("");
+        }
       }, {
         text: "删除",
         command: "delete"

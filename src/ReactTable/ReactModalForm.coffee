@@ -1,7 +1,9 @@
 EditControlMinin =
   getEditControl :(key,schema)->
     debugger
-    readonly = @props.readonly || schema.readonly
+    readonly = @props.readonly ? schema.readonlyOnModal ? schema.readonly
+
+    ##readonly = @props.readonly || (schema?.readonlyOnModal && schema.readonly)
     switch schema.type
       when "Text"
         <input  ref={key} type="text" valueLink={@linkState(key)} readOnly={if readonly then true else false}

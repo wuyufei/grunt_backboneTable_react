@@ -6,26 +6,26 @@
     mixins: [React.addons.PureRenderMixin],
     componentWillMount: function() {},
     getButtonProps: function(buttonInfo) {
-      var btnProps, ref, ref1, ref2;
+      var btnProps, ref, ref1, ref2, ref3, ref4, ref5;
       btnProps = {};
       switch (buttonInfo.command) {
         case "detail":
-          btnProps.handleClick = (ref = buttonInfo.onClick) != null ? ref : this.props.detailButtonClick;
+          btnProps.handleClick = (ref = (ref1 = buttonInfo.onClick) != null ? ref1.bind(this, this.props.model) : void 0) != null ? ref : this.props.detailButtonClick;
           btnProps.className = "btn btn-xs btn-info";
           btnProps.icon = "glyphicon glyphicon-list";
           break;
         case "edit":
-          btnProps.handleClick = (ref1 = buttonInfo.onClick) != null ? ref1 : this.props.editButtonClick;
+          btnProps.handleClick = (ref2 = (ref3 = buttonInfo.onClick) != null ? ref3.bind(this, this.props.model) : void 0) != null ? ref2 : this.props.editButtonClick;
           btnProps.className = "btn btn-xs btn-primary";
           btnProps.icon = "glyphicon glyphicon-edit";
           break;
         case "delete":
-          btnProps.handleClick = (ref2 = buttonInfo.onClick) != null ? ref2 : this.props.deleteButtonClick;
+          btnProps.handleClick = (ref4 = (ref5 = buttonInfo.onClick) != null ? ref5.bind(this, this.props.model) : void 0) != null ? ref4 : this.props.deleteButtonClick;
           btnProps.className = "btn btn-xs btn-danger";
           btnProps.icon = "glyphicon glyphicon-trash";
           break;
         default:
-          btnProps.handleClick = buttonInfo.onClick;
+          btnProps.handleClick = buttonInfo.onClick.bind(this, this.props.model);
           btnProps.className = "";
           btnProps.icon = "glyphicon glyphicon-list";
       }

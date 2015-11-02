@@ -5,19 +5,19 @@ Row = React.createClass
     btnProps = {}
     switch buttonInfo.command
         when "detail"
-          btnProps.handleClick = buttonInfo.onClick ? @props.detailButtonClick
+          btnProps.handleClick = buttonInfo.onClick?.bind(@,@props.model) ? @props.detailButtonClick
           btnProps.className = "btn btn-xs btn-info"
           btnProps.icon="glyphicon glyphicon-list"
         when "edit"
-          btnProps.handleClick = buttonInfo.onClick ? @props.editButtonClick
+          btnProps.handleClick = buttonInfo.onClick?.bind(@,@props.model) ? @props.editButtonClick
           btnProps.className = "btn btn-xs btn-primary"
           btnProps.icon="glyphicon glyphicon-edit"
         when "delete"
-          btnProps.handleClick = buttonInfo.onClick ? @props.deleteButtonClick
+          btnProps.handleClick = buttonInfo.onClick?.bind(@,@props.model) ? @props.deleteButtonClick
           btnProps.className = "btn btn-xs btn-danger"
           btnProps.icon="glyphicon glyphicon-trash"
         else
-          btnProps.handleClick = buttonInfo.onClick
+          btnProps.handleClick = buttonInfo.onClick.bind(@,@props.model)
           btnProps.className = ""
           btnProps.icon = "glyphicon glyphicon-list"
       btnProps

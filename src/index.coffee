@@ -26,6 +26,7 @@ User = Backbone.Model.extend
       type:"Text"
       title:"姓名"
       readonly:true
+      readonlyOnModal:false
     age:
       type:"Text"
       title:"年龄"
@@ -72,10 +73,15 @@ TableView = Backbone.View.extend
     this.listenTo @collection,"reset add remove change",@render.bind(this)
     this.options = {}
     _.extend this.options,options
+  selectedRowChange:(model)->
+    @.trigger("selectedRowChange",model)
   render:->
     debugger
-    React.render <ReactTable {...@options}></ReactTable>,
+    React.render <ReactTable {...@options} tableView={@}></ReactTable>,
       @el
+  remove:->
+    React.unmountComponentAtNode(@el)
+    TableView.__super__.remove.apply(this,arguments)
 
 table = new TableView
   el:$("#container")
@@ -86,11 +92,37 @@ table = new TableView
   cellDoubleClick:(model,key)->
     debugger
     alert("双击")
+  addButtonClick:(e)->
+    e.preventDefault()
+  detailButtonClick:(model,e)->
+    e.preventDefault()
+  editButtonClick:(model,e)->
+    e.preventDefault()
+  deleteButtonClick:(model,e)->
+    e.preventDefault()
+
+
   buttons:[
-    {text:"详情", command:"detail"}
-    {text:"编辑", command:"edit"}
+    {
+      text:"详情"
+      command:"detail"
+      onClick:(model)->
+        debugger
+    }
+    {
+      text:"编辑"
+      command:"edit"
+      onClick:(model)->
+        debugger
+    }
     {text:"删除", command:"delete"}
-    {text:"删除", command:"delete"}
+    {
+      text:"审核"
+      command:"verify"
+      onClick:(model)->
+        debugger
+        alert("")
+    }
     {text:"删除", command:"delete"}
   ]
 

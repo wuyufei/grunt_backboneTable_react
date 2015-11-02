@@ -15,7 +15,7 @@ ActionMixin =
       e.stopPropagation()
     debugger
     @setState
-      selectRow:model.cid
+      selectedRow:model.cid
     @props.cellClick?(model,key)
 
   cellDoubleClick:(model,key)->
@@ -41,22 +41,24 @@ ActionMixin =
       React.render <ModalForm model={model} headerText={"编辑"}/>,$("<div>").appendTo($("body"))[0]
   deleteButtonClick:(model,e)->
     return if @cellEndEdit?() is false
-    modalInfoProps =
-      msg:"是否确认删除？"
-      confirmButtonClick:(event)->
-        model.destroy
-          success:->
-            props =
-              msg:"删除成功"
-              autoClose:true
-            React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
-          error:(model, response, options)->
-            event.preventDefault()
-            event.error = options.errorThrown
-          wait:true
-          async:false
-        return
-    React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
+    @props.detailButtonClick?(e,model)
+    unless e.isDefaultPrevented()
+      modalInfoProps =
+        msg:"是否确认删除？"
+        confirmButtonClick:(event)->
+          model.destroy
+            success:->
+              props =
+                msg:"删除成功"
+                autoClose:true
+              React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
+            error:(model, response, options)->
+              event.preventDefault()
+              event.error = options.errorThrown
+            wait:true
+            async:false
+          return
+      React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
 
 
 
@@ -64,7 +66,11 @@ ActionMixin =
 Table = React.createClass
     mixins:[React.addons.PureRenderMixin,ActionMixin]
     getInitialState:->
-      selectRow:null
+      selectedRow:do=>
+        if @props.collection.length>0
+          return @props.collection.at(0).cid
+        else
+          null
       sortField:null
       sortDir:"asc"
       currentPage:0
@@ -83,6 +89,11 @@ Table = React.createClass
       #_.isEqual深度判等
       #if nextState.sortField isnt @state.sortField or nextState.sortDir isnt @state.sortDir
       #  @sortedmodels = @sortCollection()
+    componentDidUpdate:(prevProps,prevState)->
+      if prevState.selectedRow isnt @state.selectedRow
+        model = @props.collection.get(@state.selectedRow)
+        @props.tableView.selectedRowChange(model)
+
 
     pageChange:(page)->
       @setState
@@ -90,6 +101,7 @@ Table = React.createClass
         editRow:null
         editCell:null
         cellError:null
+        selectedRow:null
     columnHeaderClickHandler:(e)->
       return unless @props.enableSort
       key = e.target.dataset.column
@@ -107,17 +119,21 @@ Table = React.createClass
     sortCollection:->
         debugger
         that = @
+
         sortModels = _.clone @props.collection.models
-        sortModels.sort (a,b)->
-          a = a.get(that.state.sortField)
-          b = b.get(that.state.sortField)
-          if _.isString(a)
-            return a.localeCompare(b);
-          else
-            return a-b
-        if @state.sortDir is "desc"
-          sortModels.reverse()
+        if @state.sortField
+          sortModels.sort (a,b)->
+            a = a.get(that.state.sortField)
+            b = b.get(that.state.sortField)
+            if _.isString(a)
+              return a.localeCompare(b);
+            else
+              return a-b
+          if @state.sortDir is "desc"
+            sortModels.reverse()
         sortModels
+
+
 
 
     cellBeginEdit:(model,key)->
@@ -199,7 +215,7 @@ Table = React.createClass
           editButtonClick:that.editButtonClick.bind(@,model)
           deleteButtonClick:that.deleteButtonClick.bind(@,model)
           buttons:that.props.buttons
-          selected:if that.state.selectRow is model.cid then true else false
+          selected:if that.state.selectedRow is model.cid then true else false
           cellDoubleClick:@cellDoubleClick.bind(@,model)
         <Row ref={model.cid} key={model.cid}  {...rowProps}/>
       containerStyle =

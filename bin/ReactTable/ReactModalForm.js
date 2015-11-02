@@ -5,8 +5,8 @@
   EditControlMinin = {
     getEditControl: function(key, schema) {
       debugger;
-      var opt, options, readonly;
-      readonly = this.props.readonly || schema.readonly;
+      var opt, options, readonly, ref, ref1;
+      readonly = (ref = (ref1 = this.props.readonly) != null ? ref1 : schema.readonlyOnModal) != null ? ref : schema.readonly;
       switch (schema.type) {
         case "Text":
           return React.createElement("input", {
@@ -19,11 +19,11 @@
           });
         case "Select":
           options = (function() {
-            var i, len, ref, results;
-            ref = schema.options;
+            var i, len, ref2, results;
+            ref2 = schema.options;
             results = [];
-            for (i = 0, len = ref.length; i < len; i++) {
-              opt = ref[i];
+            for (i = 0, len = ref2.length; i < len; i++) {
+              opt = ref2[i];
               results.push(React.createElement("option", {
                 "value": opt.val
               }, opt.label));
