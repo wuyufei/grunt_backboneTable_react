@@ -123,6 +123,7 @@
   table = new TableView({
     el: $("#container"),
     collection: users,
+    readonly: true,
     cellClick: function(model, key) {
       debugger;
     },

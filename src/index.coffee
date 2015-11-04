@@ -86,6 +86,7 @@ TableView = Backbone.View.extend
 table = new TableView
   el:$("#container")
   collection:users
+  readonly:true
   cellClick:(model,key)->
     debugger
     #alert("单击")

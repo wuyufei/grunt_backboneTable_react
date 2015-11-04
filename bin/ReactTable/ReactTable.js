@@ -5,20 +5,22 @@
   ActionMixin = {
     cellClick: function(model, key, e) {
       var base, editCell, editKey, editRow, editValue, eidtModel, schema;
-      schema = model.schema[key];
-      if (schema.readonly === true) {
-        if (this.state.editRow) {
-          editRow = this.refs[this.state.editRow];
-          editCell = editRow.refs[this.state.editCell];
-          eidtModel = editRow.props.model;
-          editKey = editCell.props.fieldKey;
-          editValue = editCell.state.value;
-          this.cellEndEdit(eidtModel, editKey, editValue);
+      if (this.props.readonly !== true) {
+        schema = model.schema[key];
+        if (schema.readonly === true) {
+          if (this.state.editRow) {
+            editRow = this.refs[this.state.editRow];
+            editCell = editRow.refs[this.state.editCell];
+            eidtModel = editRow.props.model;
+            editKey = editCell.props.fieldKey;
+            editValue = editCell.state.value;
+            this.cellEndEdit(eidtModel, editKey, editValue);
+          }
+        } else {
+          this.cellBeginEdit(model, key);
+          e.preventDefault();
+          e.stopPropagation();
         }
-      } else {
-        this.cellBeginEdit(model, key);
-        e.preventDefault();
-        e.stopPropagation();
       }
       debugger;
       this.setState({

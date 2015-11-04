@@ -1,18 +1,19 @@
 ActionMixin =
   cellClick:(model,key,e)->
-    schema = model.schema[key]
-    if schema.readonly is true
-      if @state.editRow
-        editRow = @refs[@state.editRow]
-        editCell = editRow.refs[@state.editCell]
-        eidtModel = editRow.props.model
-        editKey = editCell.props.fieldKey
-        editValue = editCell.state.value
-        @cellEndEdit(eidtModel,editKey,editValue)
-    else
-      @cellBeginEdit(model,key)
-      e.preventDefault()
-      e.stopPropagation()
+    if @props.readonly isnt true
+      schema = model.schema[key]
+      if schema.readonly is true
+        if @state.editRow
+          editRow = @refs[@state.editRow]
+          editCell = editRow.refs[@state.editCell]
+          eidtModel = editRow.props.model
+          editKey = editCell.props.fieldKey
+          editValue = editCell.state.value
+          @cellEndEdit(eidtModel,editKey,editValue)
+      else
+        @cellBeginEdit(model,key)
+        e.preventDefault()
+        e.stopPropagation()
     debugger
     @setState
       selectedRow:model.cid
