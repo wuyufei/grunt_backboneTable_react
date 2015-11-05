@@ -99,10 +99,6 @@ table = new TableView
     e.preventDefault()
   editButtonClick:(model,e)->
     e.preventDefault()
-  deleteButtonClick:(model,e)->
-    e.preventDefault()
-
-
   buttons:[
     {
       text:"详情"

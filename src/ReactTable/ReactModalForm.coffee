@@ -1,42 +1,58 @@
 EditControlMinin =
   getEditControl :(key,schema)->
     debugger
-    readonly = @props.readonly ? schema.readonlyOnModal ? schema.readonly
-
-    ##readonly = @props.readonly || (schema?.readonlyOnModal && schema.readonly)
-    switch schema.type
-      when "Text"
-        <input  ref={key} type="text" valueLink={@linkState(key)} readOnly={if readonly then true else false}
-        className="form-control" placeholder={schema.title} ></input>
-      when "Select"
-        options = for opt in schema.options
-          <option value={opt.val}>{opt.label}</option>
-        <select ref={key} ref="input" valueLink={@linkState(key)} disabled={if readonly then true else false}
-          className='form-control' >
-          {options}
-        </select>
-      when "DateTime"
-        <input  className="form-control"  ref={key} type="text" valueLink={@linkState(key)}  readOnly="readonly"/>
-      else
-        <input  ref={key} type="text" valueLink={@linkState(k)}
-        className="form-control" placeholder={schema.title} ></input>
+    if @props.customTemplate
+      switch schema.type
+        when "Text"
+          input = $("<input type='text' value='#{@props.model.get(key) ? ""}' class='form-control' style='display:inline-block;width:100%;'/>")
+        when "Select"
+          input = $("<select type='text'  class='form-control' style='display:inline-block;'/>")
+        when "DateTime"
+          input = $("<input type='text' value='#{@props.model.get(key) ? ""}' class='form-control' style='display:inline-block;'/>")
+        else
+          input = $("<input type='text' value='#{@props.model.get(key) ? ""}' class='form-control' style='display:inline-block;'/>")
+    else
+      readonly = @props.readonly ? schema.readonlyOnModal ? schema.readonly
+      switch schema.type
+        when "Text"
+          <input  ref={key} type="text" valueLink={@linkState(key)} readOnly={if readonly then true else false}
+          className="form-control" placeholder={schema.title} ></input>
+        when "Select"
+          options = for opt in schema.options
+            <option value={opt.val}>{opt.label}</option>
+          <select ref={key} ref="input" valueLink={@linkState(key)} disabled={if readonly then true else false}
+            className='form-control' >
+            {options}
+          </select>
+        when "DateTime"
+          <input  className="form-control"  ref={key} type="text" valueLink={@linkState(key)}  readOnly="readonly"/>
+        else
+          <input  ref={key} type="text" valueLink={@linkState(k)}
+          className="form-control" placeholder={schema.title} ></input>
 
   componentDidMount:->
     debugger
-    for own k,v of @props.model.schema when @props.readonly isnt true and v.readonly isnt true and v.type is "DateTime"
-        dateTimeEl = $ React.findDOMNode(@refs[k])
-        dateTimeEl.datetimepicker
-            format:v.format
-            language:"zh-CN"
-            weekStart:1
-            todayBtn:1
-            autoclose:1
-            todayHighLight: 1
-            startView: 2
-            minView: 2
-            forceParse: 0
-            todayBtn: true
-            pickerPosition:"bottom-right"
+    $el = $(@getDOMNode())
+    if @props.customTemplate
+      for own k,v of @props.model.schema
+        container = $el.find("[data-editorid=#{k}]")
+        container.append @getEditControl(k,v)
+
+    else
+      for own k,v of @props.model.schema when @props.readonly isnt true and v.readonly isnt true and v.type is "DateTime"
+          dateTimeEl = $ React.findDOMNode(@refs[k])
+          dateTimeEl.datetimepicker
+              format:v.format
+              language:"zh-CN"
+              weekStart:1
+              todayBtn:1
+              autoclose:1
+              todayHighLight: 1
+              startView: 2
+              minView: 2
+              forceParse: 0
+              todayBtn: true
+              pickerPosition:"bottom-right"
 
 
 
@@ -75,6 +91,7 @@ ModalForm = React.createClass
 
   componentWillUpdate:(nextProps, nextState)->
 
+
   componentDidUpdate:->
     [model,state,that] = [@props.model,@state,@]
 
@@ -97,34 +114,62 @@ ModalForm = React.createClass
 
   render:->
     #<input  ref={k} type="text" valueLink={@linkState(k)} className="form-control" placeholder={v.title} ></input>
-    fieldEls = for own k,v of @props.model.schema
-      <div className="col-md-6 col-sm-12" style={{marginTop:10}}>
-        <label className="col-sm-4 control-label">{v.title}</label>
-        <div className="col-sm-8">
-          {@getEditControl(k,v)}
-        </div>
-      </div>
-    <div className='modal fade'>
-      <div className="modal-dialog modal-lg">
-        <div className="modal-content">
-          <div className="modal-header">
-            <button type="button" className="close" data-dismiss="modal" aria-hidden="true">x</button>
-            <h4 className="modal-title">{@props.headerText}</h4>
-          </div>
-          <div className="modal-body">
-            <div className="container-fluid">
-              <div className="row">
+    if @props.customTemplate
+      that = @
+      createCustomForm = ->
+        __html:that.props.customTemplate
+      <div className='modal fade'>
+        <div className="modal-dialog modal-lg">
+          <div className="modal-content">
+            <div className="modal-header">
+              <button type="button" className="close" data-dismiss="modal" aria-hidden="true">x</button>
+              <h4 className="modal-title">{@props.headerText}</h4>
+            </div>
+            <div className="modal-body">
+              <div className="container-fluid">
+                <div className="row">
                 <form className="form-horizontal" role="form">
-                  {fieldEls}
+                  <div dangerouslySetInnerHTML={createCustomForm()} />
                 </form>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-default" data-dismiss="modal">关闭</button>
-            {if @props.readonly then null else <button ref={"saveBtn"} type="button" className="btn btn-primary" onClick={@saveHandle}>保存</button>}
+            <div className="modal-footer">
+              <button type="button" className="btn btn-default" data-dismiss="modal">关闭</button>
+              {if @props.readonly then null else <button ref={"saveBtn"} type="button" className="btn btn-primary" onClick={@saveHandle}>保存</button>}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    else
+      fieldEls = for own k,v of @props.model.schema
+        <div className="col-md-6 col-sm-12" style={{marginTop:10}}>
+          <label className="col-sm-4 control-label">{v.title}</label>
+          <div className="col-sm-8">
+            {@getEditControl(k,v)}
+          </div>
+        </div>
+      <div className='modal fade'>
+        <div className="modal-dialog modal-lg">
+          <div className="modal-content">
+            <div className="modal-header">
+              <button type="button" className="close" data-dismiss="modal" aria-hidden="true">x</button>
+              <h4 className="modal-title">{@props.headerText}</h4>
+            </div>
+            <div className="modal-body">
+              <div className="container-fluid">
+                <div className="row">
+                  <form className="form-horizontal" role="form">
+                    {fieldEls}
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-default" data-dismiss="modal">关闭</button>
+              {if @props.readonly then null else <button ref={"saveBtn"} type="button" className="btn btn-primary" onClick={@saveHandle}>保存</button>}
+            </div>
+          </div>
+        </div>
+      </div>
 window.ModalForm = ModalForm

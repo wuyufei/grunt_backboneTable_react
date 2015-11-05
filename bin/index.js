@@ -140,9 +140,6 @@
     editButtonClick: function(model, e) {
       return e.preventDefault();
     },
-    deleteButtonClick: function(model, e) {
-      return e.preventDefault();
-    },
     buttons: [
       {
         text: "详情",

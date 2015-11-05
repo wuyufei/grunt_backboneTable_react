@@ -47,7 +47,8 @@
         });
         return React.render(React.createElement(ModalForm, {
           "model": model,
-          "headerText": "新增"
+          "headerText": "新增",
+          "customTemplate": this.props.customTemplate
         }), $("<div>").appendTo($("body"))[0]);
       }
     },
@@ -63,7 +64,8 @@
         return React.render(React.createElement(ModalForm, {
           "readonly": true,
           "model": model,
-          "headerText": "详情"
+          "headerText": "详情",
+          "customTemplate": this.props.customTemplate
         }), $("<div>").appendTo($("body"))[0]);
       }
     },
@@ -78,7 +80,8 @@
       if (!e.isDefaultPrevented()) {
         return React.render(React.createElement(ModalForm, {
           "model": model,
-          "headerText": "编辑"
+          "headerText": "编辑",
+          "customTemplate": this.props.customTemplate
         }), $("<div>").appendTo($("body"))[0]);
       }
     },
@@ -87,8 +90,9 @@
       if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
         return;
       }
-      if (typeof (base = this.props).detailButtonClick === "function") {
-        base.detailButtonClick(e, model);
+      debugger;
+      if (typeof (base = this.props).deleteButtonClick === "function") {
+        base.deleteButtonClick(e, model);
       }
       if (!e.isDefaultPrevented()) {
         modalInfoProps = {
@@ -101,7 +105,7 @@
                   msg: "删除成功",
                   autoClose: true
                 };
-                return React.render(React.createElement(ModalInfo, React.__spread({}, modalInfoProps)), $("<div>").appendTo($("body"))[0]);
+                return React.render(React.createElement(ModalInfo, React.__spread({}, props)), $("<div>").appendTo($("body"))[0]);
               },
               error: function(model, response, options) {
                 event.preventDefault();
@@ -118,7 +122,7 @@
   };
 
   Table = React.createClass({
-    mixins: [React.addons.PureRenderMixin, ActionMixin],
+    mixins: [ActionMixin],
     getInitialState: function() {
       return {
         selectedRow: (function(_this) {

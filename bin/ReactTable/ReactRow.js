@@ -53,6 +53,7 @@
           for (i = 0, len = buttons.length; i < len; i++) {
             btn = buttons[i];
             btnProps = that.getButtonProps(btn);
+            debugger;
             results.push(React.createElement("button", {
               "className": btnProps.className,
               "style": {
@@ -89,7 +90,7 @@
             "onClick": btnProps.handleClick
           }, React.createElement("span", {
             "className": btnProps.icon
-          }), " ", btn.text), React.createElement("button", {
+          }), " ", splitButton.text), React.createElement("button", {
             "type": "button",
             "className": "btn btn-xs btn-default  dropdown-toggle",
             "data-toggle": "dropdown",

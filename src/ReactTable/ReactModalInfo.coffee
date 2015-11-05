@@ -20,7 +20,6 @@ ModalInfo = React.createClass
                 else
                   modalContainer = $(@getDOMNode())
                   modalContainer.modal("hide")
-
               render:->
                 <div className='modal fade'>
                   <div className="modal-dialog">

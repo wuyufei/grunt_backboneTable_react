@@ -29,20 +29,21 @@ ActionMixin =
       addButtonClick(e)
     unless e.isDefaultPrevented()
       model = @props.collection.create {},{wait:true}
-      React.render  <ModalForm model={model} headerText={"新增"}/>,$("<div>").appendTo($("body"))[0]
+      React.render  <ModalForm model={model} headerText={"新增"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
   detailButtonClick:(model,e)->
     return if @cellEndEdit?() is false
     @props.detailButtonClick?(e,model)
     unless e.isDefaultPrevented()
-      React.render <ModalForm readonly={true} model={model} headerText={"详情"}/>,$("<div>").appendTo($("body"))[0]
+      React.render <ModalForm readonly={true} model={model} headerText={"详情"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
   editButtonClick:(model,e)->
     return if @cellEndEdit?() is false
     @props.detailButtonClick?(e,model)
     unless e.isDefaultPrevented()
-      React.render <ModalForm model={model} headerText={"编辑"}/>,$("<div>").appendTo($("body"))[0]
+      React.render <ModalForm model={model} headerText={"编辑"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
   deleteButtonClick:(model,e)->
     return if @cellEndEdit?() is false
-    @props.detailButtonClick?(e,model)
+    debugger
+    @props.deleteButtonClick?(e,model)
     unless e.isDefaultPrevented()
       modalInfoProps =
         msg:"是否确认删除？"
@@ -52,7 +53,7 @@ ActionMixin =
               props =
                 msg:"删除成功"
                 autoClose:true
-              React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
+              React.render <ModalInfo {...props} />,$("<div>").appendTo($("body"))[0]
             error:(model, response, options)->
               event.preventDefault()
               event.error = options.errorThrown
@@ -65,7 +66,7 @@ ActionMixin =
 
 
 Table = React.createClass
-    mixins:[React.addons.PureRenderMixin,ActionMixin]
+    mixins:[ActionMixin]
     getInitialState:->
       selectedRow:do=>
         if @props.collection.length>0

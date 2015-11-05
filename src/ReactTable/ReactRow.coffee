@@ -37,6 +37,7 @@ Row = React.createClass
 
       buttonsEl = for btn in buttons
         btnProps = that.getButtonProps(btn)
+        debugger
         <button className={btnProps.className} style={{marginRight:5}} onClick={btnProps.handleClick}>
           <span className={btnProps.icon}></span> {btn.text}
         </button>
@@ -48,7 +49,7 @@ Row = React.createClass
         btnProps = that.getButtonProps(splitButton)
         splitButtonEl = <div className="btn-group">
                           <button className={btnProps.className} onClick={btnProps.handleClick}>
-                            <span className={btnProps.icon}></span> {btn.text}
+                            <span className={btnProps.icon}></span> {splitButton.text}
                           </button>
                           <button type="button" className="btn btn-xs btn-default  dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <span className="caret"></span>
