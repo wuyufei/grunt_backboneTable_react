@@ -7,7 +7,7 @@
       modalContainer = $(this.getDOMNode());
       modalContainer.modal("show");
       modalContainer.on("hidden.bs.modal", function() {
-        React.unmountComponentAtNode(modalContainer[0]);
+        React.unmountComponentAtNode(modalContainer.parent()[0]);
         return modalContainer.parent().remove();
       });
       if (this.props.autoClose) {

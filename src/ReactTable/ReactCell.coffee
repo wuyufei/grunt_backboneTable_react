@@ -34,6 +34,29 @@ TextCell = React.createClass
       else
         <td  onDoubleClick={@props.cellDoubleClick} onClick={@props.cellClick}>{@state.value}</td>
 
+CheckBoxCell = React.createClass
+  mixins:[React.addons.PureRenderMixin,React.addons.LinkedStateMixin,CellMixin]
+  render:->
+    cellStyle =
+      padding:0
+    if @props.isEdit
+      style =
+        margin:0
+        height:"100%"
+        padding:0
+        border:0
+      <td style={cellStyle}>
+        <input type="checkbox" style={style} valueLink={@linkState("value")} onBlue={@props.cellEndEdit}/>
+      </td>
+    else
+      debugger
+      if @state.value is "0"
+        <td style={cellStyle} onClick={@props.cellClick}>
+          <span className="glyphicon glyphicon-ok"  ></span>
+        </td>
+      else
+        <td style={cellStyle}  onClick={@props.cellClick}></td>
+
 
 
 SelectCell = React.createClass
@@ -137,6 +160,7 @@ window.CellClasses =
           Text:TextCell
           Select:SelectCell
           DateTime:DateTimeCell
+          Checkbox:CheckBoxCell
 #window.TextCell=TextCell
 #window.SelectCell = SelectCell
 #window.DateTimeCell = DateTimeCell

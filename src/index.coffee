@@ -43,6 +43,9 @@ User = Backbone.Model.extend
         {val:"2",label:"本科"}
         {val:"3",label:"硕士"}
       ]
+    sb:
+      type:"Checkbox"
+      title:"傻逼"
 
 Users = Backbone.Collection.extend
   url:"/users"
@@ -59,7 +62,9 @@ template =
             'name':"@cname"
             "age": "@integer(10,80)"
             "birthday":"@date"
-            "education|1":["1","2","3"]        ]
+            "education|1":["1","2","3"]
+            "sb|1":["0","1"]
+        ]
 Mock.mock /users/,"get",(options)->
   Mock.mock(template).list
 ReactTable = window.ReactTable
@@ -86,7 +91,7 @@ TableView = Backbone.View.extend
 table = new TableView
   el:$("#container")
   collection:users
-  readonly:true
+  readonly:false
   cellClick:(model,key)->
     debugger
     #alert("单击")

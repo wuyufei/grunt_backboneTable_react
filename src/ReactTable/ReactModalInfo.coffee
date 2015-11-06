@@ -4,7 +4,7 @@ ModalInfo = React.createClass
                 modalContainer = $(@getDOMNode())
                 modalContainer.modal("show")
                 modalContainer.on "hidden.bs.modal",->
-                  React.unmountComponentAtNode(modalContainer[0])
+                  React.unmountComponentAtNode(modalContainer.parent()[0])
                   modalContainer.parent().remove()
                 if @props.autoClose
                   setTimeout ->

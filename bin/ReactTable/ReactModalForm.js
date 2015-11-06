@@ -131,8 +131,8 @@
       modalContainer = $(el);
       modalContainer.modal("show");
       return modalContainer.on("hidden.bs.modal", function() {
-        React.unmountComponentAtNode(modalContainer[0]);
-        return modalContainer.parent.remove();
+        React.unmountComponentAtNode(modalContainer.parent()[0]);
+        return modalContainer.parent().remove();
       });
     },
     saveHandle: function() {

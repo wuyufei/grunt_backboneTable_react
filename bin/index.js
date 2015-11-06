@@ -64,6 +64,10 @@
             label: "硕士"
           }
         ]
+      },
+      sb: {
+        type: "Checkbox",
+        title: "傻逼"
       }
     }
   });
@@ -82,7 +86,8 @@
         'name': "@cname",
         "age": "@integer(10,80)",
         "birthday": "@date",
-        "education|1": ["1", "2", "3"]
+        "education|1": ["1", "2", "3"],
+        "sb|1": ["0", "1"]
       }
     ]
   };
@@ -123,7 +128,7 @@
   table = new TableView({
     el: $("#container"),
     collection: users,
-    readonly: true,
+    readonly: false,
     cellClick: function(model, key) {
       debugger;
     },

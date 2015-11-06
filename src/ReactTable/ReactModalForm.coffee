@@ -69,8 +69,8 @@ ModalForm = React.createClass
     modalContainer = $(el)
     modalContainer.modal("show")
     modalContainer.on "hidden.bs.modal",->
-      React.unmountComponentAtNode(modalContainer[0])
-      modalContainer.parent.remove()
+      React.unmountComponentAtNode(modalContainer.parent()[0])
+      modalContainer.parent().remove()
   saveHandle:->
     [model,state,that] = [@props.model,@state,@]
     modalContainer = $(@getDOMNode())

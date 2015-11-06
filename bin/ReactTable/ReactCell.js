@@ -1,5 +1,5 @@
 (function() {
-  var CellMixin, DateTimeCell, SelectCell, TextCell;
+  var CellMixin, CheckBoxCell, DateTimeCell, SelectCell, TextCell;
 
   CellMixin = {
     componentWillMount: function() {
@@ -55,6 +55,47 @@
           "onDoubleClick": this.props.cellDoubleClick,
           "onClick": this.props.cellClick
         }, this.state.value);
+      }
+    }
+  });
+
+  CheckBoxCell = React.createClass({
+    mixins: [React.addons.PureRenderMixin, React.addons.LinkedStateMixin, CellMixin],
+    render: function() {
+      var cellStyle, style;
+      cellStyle = {
+        padding: 0
+      };
+      if (this.props.isEdit) {
+        style = {
+          margin: 0,
+          height: "100%",
+          padding: 0,
+          border: 0
+        };
+        return React.createElement("td", {
+          "style": cellStyle
+        }, React.createElement("input", {
+          "type": "checkbox",
+          "style": style,
+          "valueLink": this.linkState("value"),
+          "onBlue": this.props.cellEndEdit
+        }));
+      } else {
+        debugger;
+        if (this.state.value === "0") {
+          return React.createElement("td", {
+            "style": cellStyle,
+            "onClick": this.props.cellClick
+          }, React.createElement("span", {
+            "className": "glyphicon glyphicon-ok"
+          }));
+        } else {
+          return React.createElement("td", {
+            "style": cellStyle,
+            "onClick": this.props.cellClick
+          });
+        }
       }
     }
   });
@@ -243,7 +284,8 @@
   window.CellClasses = {
     Text: TextCell,
     Select: SelectCell,
-    DateTime: DateTimeCell
+    DateTime: DateTimeCell,
+    Checkbox: CheckBoxCell
   };
 
 }).call(this);
