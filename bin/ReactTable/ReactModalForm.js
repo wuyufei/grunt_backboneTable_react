@@ -5,22 +5,26 @@
   EditControlMinin = {
     getEditControl: function(key, schema) {
       debugger;
-      var input, opt, options, readonly, ref, ref1, ref2, ref3, ref4;
+      var input, opt, options, readonly, ref, ref1, ref2, ref3, ref4, type;
       if (this.props.customTemplate) {
-        switch (schema.type) {
-          case "Text":
+        type = schema.type.toLowerCase();
+        switch (type) {
+          case "text":
             return input = $("<input type='text' value='" + ((ref = this.props.model.get(key)) != null ? ref : "") + "' class='form-control' style='display:inline-block;width:100%;'/>");
-          case "Select":
+          case "select":
             return input = $("<select type='text'  class='form-control' style='display:inline-block;'/>");
-          case "DateTime":
+          case "dateTime":
             return input = $("<input type='text' value='" + ((ref1 = this.props.model.get(key)) != null ? ref1 : "") + "' class='form-control' style='display:inline-block;'/>");
+          case "checkbox":
+            return input = $("<input type='checkbox'>");
           default:
             return input = $("<input type='text' value='" + ((ref2 = this.props.model.get(key)) != null ? ref2 : "") + "' class='form-control' style='display:inline-block;'/>");
         }
       } else {
         readonly = (ref3 = (ref4 = this.props.readonly) != null ? ref4 : schema.readonlyOnModal) != null ? ref3 : schema.readonly;
-        switch (schema.type) {
-          case "Text":
+        type = schema.type.toLowerCase();
+        switch (type) {
+          case "text":
             return React.createElement("input", {
               "ref": key,
               "type": "text",
@@ -29,7 +33,7 @@
               "className": "form-control",
               "placeholder": schema.title
             });
-          case "Select":
+          case "select":
             options = (function() {
               var i, len, ref5, results;
               ref5 = schema.options;
@@ -49,13 +53,17 @@
               "disabled": (readonly ? true : false),
               "className": 'form-control'
             }, options);
-          case "DateTime":
+          case "datetime":
             return React.createElement("input", {
               "className": "form-control",
               "ref": key,
               "type": "text",
               "valueLink": this.linkState(key),
               "readOnly": "readonly"
+            });
+          case "checkbox":
+            return React.createElement("input", {
+              "type": "checkbox"
             });
           default:
             return React.createElement("input", {

@@ -34,63 +34,71 @@
       return typeof (base = this.props).cellDoubleClick === "function" ? base.cellDoubleClick(model, key) : void 0;
     },
     addButtonClick: function(e) {
-      var model;
-      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
+      var buttonHandle, model, ref;
+      buttonHandle = (ref = _.findWhere(this.props.headerButtons, {
+        command: "add"
+      })) != null ? ref.onclick : void 0;
+      if (typeof buttonHandle === "function") {
+        buttonHandle(e);
+      }
+      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false || e.isDefaultPrevented()) {
         return;
       }
-      if (this.props.addButtonClick) {
-        addButtonClick(e);
-      }
-      if (!e.isDefaultPrevented()) {
-        model = this.props.collection.create({}, {
-          wait: true
-        });
-        return React.render(React.createElement(ModalForm, {
-          "model": model,
-          "headerText": "新增",
-          "customTemplate": this.props.customTemplate
-        }), $("<div>").appendTo($("body"))[0]);
-      }
+      model = this.props.collection.create({}, {
+        wait: true
+      });
+      return React.render(React.createElement(ModalForm, {
+        "model": model,
+        "headerText": "新增",
+        "customTemplate": this.props.customTemplate
+      }), $("<div>").appendTo($("body"))[0]);
     },
     detailButtonClick: function(model, e) {
-      var base;
-      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
+      var buttonHandle, ref;
+      buttonHandle = (ref = _.findWhere(this.props.rowButtons, {
+        command: "detail"
+      })) != null ? ref.onclick : void 0;
+      if (typeof buttonHandle === "function") {
+        buttonHandle(model, e);
+      }
+      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false || e.isDefaultPrevented()) {
         return;
       }
-      if (typeof (base = this.props).detailButtonClick === "function") {
-        base.detailButtonClick(e, model);
-      }
-      if (!e.isDefaultPrevented()) {
-        return React.render(React.createElement(ModalForm, {
-          "readonly": true,
-          "model": model,
-          "headerText": "详情",
-          "customTemplate": this.props.customTemplate
-        }), $("<div>").appendTo($("body"))[0]);
-      }
+      return React.render(React.createElement(ModalForm, {
+        "readonly": true,
+        "model": model,
+        "headerText": "详情",
+        "customTemplate": this.props.customTemplate
+      }), $("<div>").appendTo($("body"))[0]);
     },
     editButtonClick: function(model, e) {
-      var base;
-      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
+      var buttonHandle, ref;
+      buttonHandle = (ref = _.findWhere(this.props.rowButtons, {
+        command: "edit"
+      })) != null ? ref.onclick : void 0;
+      if (typeof buttonHandle === "function") {
+        buttonHandle(model, e);
+      }
+      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false || e.isDefaultPrevented()) {
         return;
       }
-      if (typeof (base = this.props).detailButtonClick === "function") {
-        base.detailButtonClick(e, model);
-      }
-      if (!e.isDefaultPrevented()) {
-        return React.render(React.createElement(ModalForm, {
-          "model": model,
-          "headerText": "编辑",
-          "customTemplate": this.props.customTemplate
-        }), $("<div>").appendTo($("body"))[0]);
-      }
+      return React.render(React.createElement(ModalForm, {
+        "model": model,
+        "headerText": "编辑",
+        "customTemplate": this.props.customTemplate
+      }), $("<div>").appendTo($("body"))[0]);
     },
     deleteButtonClick: function(model, e) {
-      var base, modalInfoProps;
-      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false) {
+      var base, buttonHandle, modalInfoProps, ref;
+      buttonHandle = (ref = _.findWhere(this.props.rowButtons, {
+        command: "delete"
+      })) != null ? ref.onclick : void 0;
+      if (typeof buttonHandle === "function") {
+        buttonHandle(model, e);
+      }
+      if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false || e.isDefaultPrevented()) {
         return;
       }
-      debugger;
       if (typeof (base = this.props).deleteButtonClick === "function") {
         base.deleteButtonClick(e, model);
       }
@@ -304,6 +312,41 @@
       }
       return columnHeaders;
     },
+    renderHeaderButtons: function() {
+      var btn, btns, buttons, props;
+      btns = this.props.headerButtons;
+      if (btns != null) {
+        buttons = (function() {
+          var i, len, ref, ref1, ref2, results;
+          results = [];
+          for (i = 0, len = btns.length; i < len; i++) {
+            btn = btns[i];
+            props = {};
+            debugger;
+            if ((btn.command != null) && btn.command === "add") {
+              props.handleClick = this.addButtonClick;
+              props.className = "btn btn-primary btn-sm";
+              props.icon = "glyphicon glyphicon-plus";
+            } else {
+              props.handleClick = (ref = btn.onclick) != null ? ref : _.noop();
+              props.className = (ref1 = btn.btnClass) != null ? ref1 : "btn btn-xs btn-info";
+              props.icon = (ref2 = btn.iconClass) != null ? ref2 : "glyphicon glyphicon-list";
+            }
+            results.push(React.createElement("button", {
+              "className": props.className,
+              "style": {
+                marginRight: 5
+              },
+              "onClick": props.handleClick
+            }, React.createElement("span", {
+              "className": props.icon
+            }), " ", btn.text));
+          }
+          return results;
+        }).call(this);
+      }
+      return buttons;
+    },
     render: function() {
       var containerStyle, model, pageCollection, rowProps, rows, sortModels, that;
       that = this;
@@ -325,7 +368,7 @@
             detailButtonClick: that.detailButtonClick.bind(this, model),
             editButtonClick: that.editButtonClick.bind(this, model),
             deleteButtonClick: that.deleteButtonClick.bind(this, model),
-            buttons: that.props.buttons,
+            buttons: that.props.rowButtons,
             selected: that.state.selectedRow === model.cid ? true : false,
             cellDoubleClick: this.cellDoubleClick.bind(this, model)
           };
@@ -351,13 +394,7 @@
         "style": {
           minHeight: 20
         }
-      }, React.createElement("button", {
-        "className": "btn btn-primary btn-sm",
-        "data-command": "add",
-        "onClick": this.addButtonClick
-      }, React.createElement("span", {
-        "className": "glyphicon glyphicon-plus"
-      }), " \u65b0\u589e"))), React.createElement("div", {
+      }, this.renderHeaderButtons())), React.createElement("div", {
         "className": "table-responsive"
       }, React.createElement("table", {
         "className": "table table-bordered table-hover",

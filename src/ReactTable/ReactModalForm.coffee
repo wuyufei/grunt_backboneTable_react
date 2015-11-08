@@ -2,33 +2,39 @@ EditControlMinin =
   getEditControl :(key,schema)->
     debugger
     if @props.customTemplate
-      switch schema.type
-        when "Text"
+      type = schema.type.toLowerCase()
+      switch type
+        when "text"
           input = $("<input type='text' value='#{@props.model.get(key) ? ""}' class='form-control' style='display:inline-block;width:100%;'/>")
-        when "Select"
+        when "select"
           input = $("<select type='text'  class='form-control' style='display:inline-block;'/>")
-        when "DateTime"
+        when "dateTime"
           input = $("<input type='text' value='#{@props.model.get(key) ? ""}' class='form-control' style='display:inline-block;'/>")
+        when "checkbox"
+          input = $("<input type='checkbox'>")
         else
           input = $("<input type='text' value='#{@props.model.get(key) ? ""}' class='form-control' style='display:inline-block;'/>")
     else
       readonly = @props.readonly ? schema.readonlyOnModal ? schema.readonly
-      switch schema.type
-        when "Text"
+      type = schema.type.toLowerCase()
+      switch type
+        when "text"
           <input  ref={key} type="text" valueLink={@linkState(key)} readOnly={if readonly then true else false}
-          className="form-control" placeholder={schema.title} ></input>
-        when "Select"
+            className="form-control" placeholder={schema.title} ></input>
+        when "select"
           options = for opt in schema.options
             <option value={opt.val}>{opt.label}</option>
           <select ref={key} ref="input" valueLink={@linkState(key)} disabled={if readonly then true else false}
             className='form-control' >
             {options}
           </select>
-        when "DateTime"
+        when "datetime"
           <input  className="form-control"  ref={key} type="text" valueLink={@linkState(key)}  readOnly="readonly"/>
+        when "checkbox"
+          <input type="checkbox" />
         else
           <input  ref={key} type="text" valueLink={@linkState(k)}
-          className="form-control" placeholder={schema.title} ></input>
+            className="form-control" placeholder={schema.title} ></input>
 
   componentDidMount:->
     debugger

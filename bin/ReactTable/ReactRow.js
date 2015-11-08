@@ -6,28 +6,29 @@
     mixins: [React.addons.PureRenderMixin],
     componentWillMount: function() {},
     getButtonProps: function(buttonInfo) {
-      var btnProps, ref, ref1, ref2, ref3, ref4, ref5;
+      var btnProps, ref, ref1, that;
+      that = this;
       btnProps = {};
       switch (buttonInfo.command) {
         case "detail":
-          btnProps.handleClick = (ref = (ref1 = buttonInfo.onClick) != null ? ref1.bind(this, this.props.model) : void 0) != null ? ref : this.props.detailButtonClick;
+          btnProps.handleClick = this.props.detailButtonClick;
           btnProps.className = "btn btn-xs btn-info";
           btnProps.icon = "glyphicon glyphicon-list";
           break;
         case "edit":
-          btnProps.handleClick = (ref2 = (ref3 = buttonInfo.onClick) != null ? ref3.bind(this, this.props.model) : void 0) != null ? ref2 : this.props.editButtonClick;
+          btnProps.handleClick = this.props.editButtonClick;
           btnProps.className = "btn btn-xs btn-primary";
           btnProps.icon = "glyphicon glyphicon-edit";
           break;
         case "delete":
-          btnProps.handleClick = (ref4 = (ref5 = buttonInfo.onClick) != null ? ref5.bind(this, this.props.model) : void 0) != null ? ref4 : this.props.deleteButtonClick;
+          btnProps.handleClick = this.props.deleteButtonClick;
           btnProps.className = "btn btn-xs btn-danger";
           btnProps.icon = "glyphicon glyphicon-trash";
           break;
         default:
-          btnProps.handleClick = buttonInfo.onClick.bind(this, this.props.model);
-          btnProps.className = "";
-          btnProps.icon = "glyphicon glyphicon-list";
+          btnProps.handleClick = buttonInfo.onclick.bind(this, this.props.model);
+          btnProps.className = (ref = buttonInfo.btnClass) != null ? ref : "btn btn-xs btn-info";
+          btnProps.icon = (ref1 = buttonInfo.iconClass) != null ? ref1 : "glyphicon glyphicon-list";
       }
       return btnProps;
     },
@@ -130,7 +131,8 @@
             required: (ref1 = validation[k]) != null ? ref1.required : void 0,
             schema: v
           };
-          Cell = CellClasses[v.type];
+          debugger;
+          Cell = CellClasses[v.type.toLowerCase()];
           results.push(React.createElement(Cell, React.__spread({
             "key": k
           }, cellProps)));

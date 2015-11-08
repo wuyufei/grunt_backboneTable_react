@@ -136,35 +136,38 @@
       debugger;
       return alert("双击");
     },
-    addButtonClick: function(e) {
-      return e.preventDefault();
-    },
-    detailButtonClick: function(model, e) {
-      return e.preventDefault();
-    },
-    editButtonClick: function(model, e) {
-      return e.preventDefault();
-    },
-    buttons: [
+    addButtonClick: function(e) {},
+    headerButtons: [
+      {
+        text: "新增",
+        command: "add",
+        onclick: function(e) {}
+      }
+    ],
+    rowButtons: [
       {
         text: "详情",
         command: "detail",
-        onClick: function(model) {
-          debugger;
+        onclick: function(model, e) {
+          return e.preventDefault();
         }
       }, {
         text: "编辑",
         command: "edit",
-        onClick: function(model) {
+        onclick: function(model, e) {
           debugger;
+          return e.preventDefault();
         }
       }, {
         text: "删除",
-        command: "delete"
+        command: "delete",
+        onclick: function(model, e) {
+          return e.preventDefault();
+        }
       }, {
         text: "审核",
         command: "verify",
-        onClick: function(model) {
+        onclick: function(model, e) {
           debugger;
           return alert("");
         }

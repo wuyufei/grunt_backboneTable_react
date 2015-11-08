@@ -24,25 +24,25 @@ ActionMixin =
     @props.cellDoubleClick?(model,key)
 
   addButtonClick:(e)->
-    return if @cellEndEdit?() is false
-    if @props.addButtonClick
-      addButtonClick(e)
-    unless e.isDefaultPrevented()
-      model = @props.collection.create {},{wait:true}
-      React.render  <ModalForm model={model} headerText={"新增"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
+    buttonHandle = _.findWhere(@props.headerButtons,command:"add")?.onclick
+    buttonHandle?(e)
+    return if @cellEndEdit?() is false or e.isDefaultPrevented()
+    model = @props.collection.create {},{wait:true}
+    React.render  <ModalForm model={model} headerText={"新增"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
   detailButtonClick:(model,e)->
-    return if @cellEndEdit?() is false
-    @props.detailButtonClick?(e,model)
-    unless e.isDefaultPrevented()
-      React.render <ModalForm readonly={true} model={model} headerText={"详情"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
+    buttonHandle = _.findWhere(@props.rowButtons,command:"detail")?.onclick
+    buttonHandle?(model,e)
+    return if @cellEndEdit?() is false or e.isDefaultPrevented()
+    React.render <ModalForm readonly={true} model={model} headerText={"详情"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
   editButtonClick:(model,e)->
-    return if @cellEndEdit?() is false
-    @props.detailButtonClick?(e,model)
-    unless e.isDefaultPrevented()
-      React.render <ModalForm model={model} headerText={"编辑"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
+    buttonHandle = _.findWhere(@props.rowButtons,command:"edit")?.onclick
+    buttonHandle?(model,e)
+    return if @cellEndEdit?() is false or e.isDefaultPrevented()
+    React.render <ModalForm model={model} headerText={"编辑"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
   deleteButtonClick:(model,e)->
-    return if @cellEndEdit?() is false
-    debugger
+    buttonHandle = _.findWhere(@props.rowButtons,command:"delete")?.onclick
+    buttonHandle?(model,e)
+    return if @cellEndEdit?() is false or e.isDefaultPrevented()
     @props.deleteButtonClick?(e,model)
     unless e.isDefaultPrevented()
       modalInfoProps =
@@ -200,6 +200,27 @@ Table = React.createClass
         columnHeaders.push(<th></th>)
       columnHeaders
 
+    renderHeaderButtons:->
+      btns = @props.headerButtons
+      if btns?
+        buttons =   for btn in btns
+          props = {}
+          debugger
+          if btn.command? and btn.command is "add"
+              props.handleClick = @addButtonClick
+              props.className =  "btn btn-primary btn-sm"
+              props.icon = "glyphicon glyphicon-plus"
+          else
+              props.handleClick = btn.onclick ? _.noop()
+              props.className =  btn.btnClass ? "btn btn-xs btn-info"
+              props.icon = btn.iconClass ? "glyphicon glyphicon-list"
+          <button className={props.className} style={{marginRight:5}} onClick={props.handleClick}>
+            <span className={props.icon}></span> {btn.text}
+          </button>
+      buttons
+
+
+
     render:->
       that = @
       debugger
@@ -216,7 +237,7 @@ Table = React.createClass
           detailButtonClick:that.detailButtonClick.bind(@,model)
           editButtonClick:that.editButtonClick.bind(@,model)
           deleteButtonClick:that.deleteButtonClick.bind(@,model)
-          buttons:that.props.buttons
+          buttons:that.props.rowButtons
           selected:if that.state.selectedRow is model.cid then true else false
           cellDoubleClick:@cellDoubleClick.bind(@,model)
         <Row ref={model.cid} key={model.cid}  {...rowProps}/>
@@ -226,7 +247,7 @@ Table = React.createClass
       <div className="panel panel-default" style={containerStyle}>
           <div className="panel-heading clearfix">
             	<div className="pull-right" data-range="headerButtons" style={{minHeight:20}}>
-                <button className="btn btn-primary btn-sm" data-command="add" onClick={@addButtonClick}><span className="glyphicon glyphicon-plus"></span> 新增</button>
+                {@renderHeaderButtons()}
               </div>
           </div>
           <div className="table-responsive" >

@@ -36,9 +36,12 @@ TextCell = React.createClass
 
 CheckBoxCell = React.createClass
   mixins:[React.addons.PureRenderMixin,React.addons.LinkedStateMixin,CellMixin]
+  componentWillMount:->
+     @setState value:if @props.value is "1" then true else false
   render:->
     cellStyle =
-      padding:0
+      #padding:0
+      textAlign:"center"
     if @props.isEdit
       style =
         margin:0
@@ -46,11 +49,11 @@ CheckBoxCell = React.createClass
         padding:0
         border:0
       <td style={cellStyle}>
-        <input type="checkbox" style={style} valueLink={@linkState("value")} onBlue={@props.cellEndEdit}/>
+        <input type="checkbox" className="input-lg" style={style}  checkedLink={@linkState("value")} onBlue={@props.cellEndEdit} />
       </td>
     else
       debugger
-      if @state.value is "0"
+      if @state.value
         <td style={cellStyle} onClick={@props.cellClick}>
           <span className="glyphicon glyphicon-ok"  ></span>
         </td>
@@ -157,10 +160,10 @@ DateTimeCell = React.createClass
           input.datetimepicker("remove")
           console.log("remove")
 window.CellClasses =
-          Text:TextCell
-          Select:SelectCell
-          DateTime:DateTimeCell
-          Checkbox:CheckBoxCell
+          text:TextCell
+          select:SelectCell
+          datetime:DateTimeCell
+          checkbox:CheckBoxCell
 #window.TextCell=TextCell
 #window.SelectCell = SelectCell
 #window.DateTimeCell = DateTimeCell

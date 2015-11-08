@@ -99,29 +99,39 @@ table = new TableView
     debugger
     alert("双击")
   addButtonClick:(e)->
-    e.preventDefault()
-  detailButtonClick:(model,e)->
-    e.preventDefault()
-  editButtonClick:(model,e)->
-    e.preventDefault()
-  buttons:[
+    #e.preventDefault()
+  headerButtons:[
+    {
+      text:"新增"
+      command:"add"
+      onclick:(e)->
+        #e.preventDefault()
+    }
+  ]
+  rowButtons:[
     {
       text:"详情"
       command:"detail"
-      onClick:(model)->
-        debugger
+      onclick:(model,e)->
+        e.preventDefault()
     }
     {
       text:"编辑"
       command:"edit"
-      onClick:(model)->
+      onclick:(model,e)->
         debugger
+        e.preventDefault()
     }
-    {text:"删除", command:"delete"}
+    {
+      text:"删除"
+      command:"delete"
+      onclick:(model,e)->
+       e.preventDefault()
+    }
     {
       text:"审核"
       command:"verify"
-      onClick:(model)->
+      onclick:(model,e)->
         debugger
         alert("")
     }

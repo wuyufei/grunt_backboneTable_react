@@ -61,10 +61,15 @@
 
   CheckBoxCell = React.createClass({
     mixins: [React.addons.PureRenderMixin, React.addons.LinkedStateMixin, CellMixin],
+    componentWillMount: function() {
+      return this.setState({
+        value: this.props.value === "1" ? true : false
+      });
+    },
     render: function() {
       var cellStyle, style;
       cellStyle = {
-        padding: 0
+        textAlign: "center"
       };
       if (this.props.isEdit) {
         style = {
@@ -77,13 +82,14 @@
           "style": cellStyle
         }, React.createElement("input", {
           "type": "checkbox",
+          "className": "input-lg",
           "style": style,
-          "valueLink": this.linkState("value"),
+          "checkedLink": this.linkState("value"),
           "onBlue": this.props.cellEndEdit
         }));
       } else {
         debugger;
-        if (this.state.value === "0") {
+        if (this.state.value) {
           return React.createElement("td", {
             "style": cellStyle,
             "onClick": this.props.cellClick
@@ -282,10 +288,10 @@
   });
 
   window.CellClasses = {
-    Text: TextCell,
-    Select: SelectCell,
-    DateTime: DateTimeCell,
-    Checkbox: CheckBoxCell
+    text: TextCell,
+    select: SelectCell,
+    datetime: DateTimeCell,
+    checkbox: CheckBoxCell
   };
 
 }).call(this);

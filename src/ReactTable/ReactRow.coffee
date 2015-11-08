@@ -2,24 +2,25 @@ Row = React.createClass
   mixins:[React.addons.PureRenderMixin]
   componentWillMount:->
   getButtonProps:(buttonInfo)->
+    that = @
     btnProps = {}
     switch buttonInfo.command
         when "detail"
-          btnProps.handleClick = buttonInfo.onClick?.bind(@,@props.model) ? @props.detailButtonClick
+          btnProps.handleClick = @props.detailButtonClick
           btnProps.className = "btn btn-xs btn-info"
           btnProps.icon="glyphicon glyphicon-list"
         when "edit"
-          btnProps.handleClick = buttonInfo.onClick?.bind(@,@props.model) ? @props.editButtonClick
+          btnProps.handleClick = @props.editButtonClick
           btnProps.className = "btn btn-xs btn-primary"
           btnProps.icon="glyphicon glyphicon-edit"
         when "delete"
-          btnProps.handleClick = buttonInfo.onClick?.bind(@,@props.model) ? @props.deleteButtonClick
+          btnProps.handleClick = @props.deleteButtonClick
           btnProps.className = "btn btn-xs btn-danger"
           btnProps.icon="glyphicon glyphicon-trash"
         else
-          btnProps.handleClick = buttonInfo.onClick.bind(@,@props.model)
-          btnProps.className = ""
-          btnProps.icon = "glyphicon glyphicon-list"
+          btnProps.handleClick = buttonInfo.onclick.bind(@,@props.model)
+          btnProps.className = buttonInfo.btnClass ? "btn btn-xs btn-info"
+          btnProps.icon = buttonInfo.iconClass ? "glyphicon glyphicon-list"
       btnProps
   render:->
     that = @
@@ -76,8 +77,8 @@ Row = React.createClass
         cellEndEdit:@props.cellEndEdit
         required:validation[k]?.required
         schema:v
-
-      Cell = CellClasses[v.type]
+      debugger
+      Cell = CellClasses[v.type.toLowerCase()]
       <Cell key={k} {...cellProps}/>
     <tr className={if @props.selected then "info" else ""}>{cells}{buttonCell}</tr>
 
