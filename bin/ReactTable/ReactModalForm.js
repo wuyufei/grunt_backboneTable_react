@@ -4,7 +4,6 @@
 
   EditControlMinin = {
     getEditControl: function(key, schema) {
-      debugger;
       var input, opt, options, readonly, ref, ref1, ref2, ref3, ref4, type;
       if (this.props.customTemplate) {
         type = schema.type.toLowerCase();
@@ -34,18 +33,20 @@
               "placeholder": schema.title
             });
           case "select":
-            options = (function() {
-              var i, len, ref5, results;
-              ref5 = schema.options;
-              results = [];
-              for (i = 0, len = ref5.length; i < len; i++) {
-                opt = ref5[i];
-                results.push(React.createElement("option", {
-                  "value": opt.val
-                }, opt.label));
-              }
-              return results;
-            })();
+            if (schema.options) {
+              options = (function() {
+                var i, len, ref5, results;
+                ref5 = schema.options;
+                results = [];
+                for (i = 0, len = ref5.length; i < len; i++) {
+                  opt = ref5[i];
+                  results.push(React.createElement("option", {
+                    "value": opt.val
+                  }, opt.label));
+                }
+                return results;
+              })();
+            }
             return React.createElement("select", {
               "ref": key,
               "ref": "input",

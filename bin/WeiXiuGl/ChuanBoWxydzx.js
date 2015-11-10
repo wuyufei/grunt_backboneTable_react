@@ -80,12 +80,6 @@
             val: "1"
           }
         ]
-      },
-      buttons: {
-        detail: true,
-        edit: true,
-        verify: false,
-        more: true
       }
     }
   });
@@ -136,11 +130,27 @@
   itemModelList = new ItemModelList;
 
   Page = React.createClass({
+    getInitialState: function() {
+      return {
+        showModal: false
+      };
+    },
+    close: function() {
+      return this.setState({
+        showModal: false
+      });
+    },
+    open: function() {
+      return this.setState({
+        showModal: true
+      });
+    },
     searchHandle: function() {
       return alert("");
     },
     render: function() {
-      var tableProps;
+      var tableProps, that;
+      that = this;
       tableProps = {
         collection: mainList,
         readonly: true,
@@ -148,7 +158,12 @@
           {
             text: "新增",
             command: "add",
-            onclick: function(e) {}
+            onclick: function(e) {
+              e.preventDefault();
+              return that.setState({
+                showModal: true
+              });
+            }
           }
         ],
         rowButtons: [
@@ -220,7 +235,16 @@
       }, "\u6253\u5370")), React.createElement(Col, {
         "xs": 12.,
         "id": "mainTable"
-      }, React.createElement(ReactTable, React.__spread({}, tableProps)))));
+      }, React.createElement(ReactTable, React.__spread({}, tableProps)))), React.createElement(Modal, {
+        "show": this.state.showModal,
+        "onHide": this.close
+      }, React.createElement(Modal.Header, {
+        "closeButton": true
+      }, React.createElement(Modal.Title, {
+        "id": "contained-modal-title-lg"
+      }, "Modal heading")), React.createElement(Modal.Body, null, React.createElement("h4", null, "Wrapped Text"), React.createElement("p", null, "Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros."), React.createElement("p", null, "Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor."), React.createElement("p", null, "Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla."), React.createElement("p", null, "Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros."), React.createElement("p", null, "Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor."), React.createElement("p", null, "Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla."), React.createElement("p", null, "Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros."), React.createElement("p", null, "Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor."), React.createElement("p", null, "Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla.")), React.createElement(Modal.Footer, null, React.createElement(Button, {
+        "onClick": this.props.onHide
+      }, "Close"))));
     }
   });
 

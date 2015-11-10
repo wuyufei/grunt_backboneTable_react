@@ -45,9 +45,7 @@
       if ((typeof this.cellEndEdit === "function" ? this.cellEndEdit() : void 0) === false || e.isDefaultPrevented()) {
         return;
       }
-      model = this.props.collection.create({}, {
-        wait: true
-      });
+      model = new this.props.collection.model;
       return React.render(React.createElement(ModalForm, {
         "model": model,
         "headerText": "新增",

@@ -1,6 +1,5 @@
 EditControlMinin =
   getEditControl :(key,schema)->
-    debugger
     if @props.customTemplate
       type = schema.type.toLowerCase()
       switch type
@@ -22,8 +21,9 @@ EditControlMinin =
           <input  ref={key} type="text" valueLink={@linkState(key)} readOnly={if readonly then true else false}
             className="form-control" placeholder={schema.title} ></input>
         when "select"
-          options = for opt in schema.options
-            <option value={opt.val}>{opt.label}</option>
+          if schema.options
+            options = for opt in schema.options
+              <option value={opt.val}>{opt.label}</option>
           <select ref={key} ref="input" valueLink={@linkState(key)} disabled={if readonly then true else false}
             className='form-control' >
             {options}

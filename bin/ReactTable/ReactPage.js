@@ -3,9 +3,13 @@
 
   Page = React.createClass({
     pageClick: function(e) {
+      debugger;
       var info, pageLength, pageNum;
       e.preventDefault();
       e.stopPropagation();
+      if ($(e.target).parent().hasClass("disabled")) {
+        return;
+      }
       pageLength = Math.ceil(this.props.collection.length / 10) - 1;
       info = e.target.dataset.number;
       if (info === "prev") {
@@ -66,6 +70,9 @@
       var i, length, pageArray, pages;
       pageArray = this.getPageArray();
       length = Math.ceil(this.props.collection.length / 10) - 1;
+      if (length < 0) {
+        length = 0;
+      }
       pages = (function() {
         var j, len, results;
         results = [];

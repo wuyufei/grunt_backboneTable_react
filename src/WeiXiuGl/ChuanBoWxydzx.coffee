@@ -57,11 +57,7 @@ MainModel = Backbone.Model.extend
                          {label:"未审核",val:"0"}
                          {label:"已审核",val:"1"}
                     ]
-                buttons:
-                    detail: true
-                    edit: true
-                    verify:false
-                    more: true
+
 
 MainList = Backbone.Collection.extend
     url: "/api/tbinv_cbwxydjhzb"
@@ -103,9 +99,18 @@ itemModelList = new ItemModelList
 
 
 Page = React.createClass
+  getInitialState:->
+    showModal: false
+  close:->
+    this.setState({ showModal: false })
+
+  open:->
+    this.setState({ showModal: true })
+
   searchHandle:->
     alert("")
   render:->
+    that = @
     tableProps =
           collection:mainList
           readonly:true
@@ -114,7 +119,8 @@ Page = React.createClass
               text:"新增"
               command:"add"
               onclick:(e)->
-                #e.preventDefault()
+                e.preventDefault()
+                that.setState showModal:true
             }
           ]
           rowButtons:[
@@ -140,6 +146,7 @@ Page = React.createClass
             }
 
           ]
+
       <Grid fluid=true>
         <Row className="show-grid">
           <Col xs={12}>
@@ -168,5 +175,25 @@ Page = React.createClass
             <ReactTable {...tableProps} />
           </Col>
         </Row>
+        <Modal show={@state.showModal} onHide={@close}>
+          <Modal.Header closeButton>
+            <Modal.Title id="contained-modal-title-lg">Modal heading</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <h4>Wrapped Text</h4>
+            <p>Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.</p>
+            <p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor.</p>
+            <p>Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla.</p>
+            <p>Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.</p>
+            <p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor.</p>
+            <p>Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla.</p>
+            <p>Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.</p>
+            <p>Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor.</p>
+            <p>Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla.</p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button onClick={this.props.onHide}>Close</Button>
+          </Modal.Footer>
+        </Modal>
       </Grid>
 React.render <Page></Page>,$("body")[0]

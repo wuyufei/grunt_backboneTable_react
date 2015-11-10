@@ -28,7 +28,8 @@ ActionMixin =
     buttonHandle = _.findWhere(@props.headerButtons,command:"add")?.onclick
     buttonHandle?(e)
     return if @cellEndEdit?() is false or e.isDefaultPrevented()
-    model = @props.collection.create {},{wait:true}
+    #model = @props.collection.create {},{wait:true}
+    model = new @props.collection.model
     React.render  <ModalForm model={model} headerText={"新增"} customTemplate={@props.customTemplate}/>,$("<div>").appendTo($("body"))[0]
   detailButtonClick:(model,e)->
     buttonHandle = _.findWhere(@props.rowButtons,command:"detail")?.onclick
