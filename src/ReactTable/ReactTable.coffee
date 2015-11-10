@@ -24,6 +24,7 @@ ActionMixin =
     @props.cellDoubleClick?(model,key)
 
   addButtonClick:(e)->
+    debugger
     buttonHandle = _.findWhere(@props.headerButtons,command:"add")?.onclick
     buttonHandle?(e)
     return if @cellEndEdit?() is false or e.isDefaultPrevented()

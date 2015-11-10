@@ -34,6 +34,7 @@
       return typeof (base = this.props).cellDoubleClick === "function" ? base.cellDoubleClick(model, key) : void 0;
     },
     addButtonClick: function(e) {
+      debugger;
       var buttonHandle, model, ref;
       buttonHandle = (ref = _.findWhere(this.props.headerButtons, {
         command: "add"
