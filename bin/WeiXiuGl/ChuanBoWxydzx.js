@@ -1,7 +1,7 @@
 (function() {
-  var ItemModel, ItemModelList, MainList, MainModel, Page, SubModel, itemModelList, mainList;
+  var AddItemModal, Breadcrumb, BreadcrumbItem, Button, Col, DetailModal, Grid, Input, ItemModel, ItemModelList, MainList, MainModel, Modal, Page, Row, SubList, SubModel, itemModelList, mainList;
 
-  _.extend(window, ReactBootstrap);
+  Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal;
 
   SubModel = Backbone.Model.extend({
     schema: {
@@ -25,6 +25,11 @@
         readonly: true
       }
     }
+  });
+
+  SubList = Backbone.Collection.extend({
+    url: "",
+    model: SubModel
   });
 
   MainModel = Backbone.Model.extend({
@@ -129,27 +134,229 @@
 
   itemModelList = new ItemModelList;
 
-  Page = React.createClass({
+  AddItemModal = React.createClass({
     getInitialState: function() {
       return {
+        show: false
+      };
+    },
+    componentWillReceiveProps: function(nextProps) {
+      return this.setState({
+        show: nextProps.show
+      });
+    },
+    render: function() {
+      var tableProps;
+      tableProps = {
+        collection: itemModelList,
+        readonly: true,
+        rowButtons: [
+          {
+            text: "选择",
+            command: "select",
+            onClick: function() {
+              return alert("");
+            }
+          }
+        ]
+      };
+      return React.createElement(Modal, {
+        "show": this.state.show,
+        "onHide": this.props.closeHanele
+      }, React.createElement(Modal.Header, {
+        "closeButton": true
+      }, React.createElement(Modal.Title, null, "\u8bf7\u9009\u62e9\u60a8\u8981\u6dfb\u52a0\u7684\u9879\u76ee")), React.createElement(Modal.Body, null, React.createElement(ReactTable, React.__spread({}, tableProps))));
+    }
+  });
+
+  DetailModal = React.createClass({
+    getInitialState: function() {
+      return {
+        show: false,
         showModal: false
       };
     },
-    close: function() {
+    closeModal: function() {
       return this.setState({
         showModal: false
       });
     },
-    open: function() {
+    componentWillReceiveProps: function(nextProps) {
       return this.setState({
-        showModal: true
+        show: nextProps.show
       });
     },
+    save: function() {},
+    render: function() {
+      var addItemModalProps, headerTexts, ref, tableProps, that;
+      that = this;
+      headerTexts = {
+        detail: "月度维修保养计划详情",
+        edit: "月度维修保养计划编辑",
+        add: "新增月度维修保养计划"
+      };
+      tableProps = {
+        collection: this.props.collection,
+        readonly: true
+      };
+      if (((ref = this.props.action) === "edit" || ref === "add")) {
+        _.extend(tableProps, {
+          headerButtons: [
+            {
+              text: "新增",
+              command: "add",
+              onclick: function(e) {
+                that.setState({
+                  showModal: true
+                });
+                return e.preventDefault();
+              }
+            }
+          ],
+          rowButtons: [
+            {
+              text: "删除",
+              command: "delete"
+            }
+          ]
+        });
+      }
+      addItemModalProps = {
+        show: this.state.showModal,
+        closeHanele: this.closeModal
+      };
+      debugger;
+      return React.createElement("div", null, React.createElement(Modal, {
+        "bsSize": "large",
+        "show": this.state.show,
+        "onHide": this.props.closeHanele
+      }, React.createElement(Modal.Header, {
+        "closeButton": true
+      }, React.createElement(Modal.Title, null, headerTexts[this.props.action])), React.createElement(Modal.Body, null, React.createElement(Grid, {
+        "fluid": true
+      }, React.createElement(Row, {
+        "className": "show-grid"
+      }, React.createElement(Col, {
+        "xs": 12.
+      }), React.createElement(Col, {
+        "xs": 12.,
+        "sm": 6.,
+        "md": 3.
+      }, React.createElement(Input, {
+        "type": "select",
+        "addonBefore": "计划年度"
+      }, React.createElement("option", {
+        "value": "2015",
+        "selected": ""
+      }, "2015"), React.createElement("option", {
+        "value": "2016"
+      }, "2016"), React.createElement("option", {
+        "value": "2016"
+      }, "2017"), React.createElement("option", {
+        "value": "2016"
+      }, "2018"), React.createElement("option", {
+        "value": "2016"
+      }, "2019"))), React.createElement(Col, {
+        "xs": 12.,
+        "sm": 6.,
+        "md": 3.
+      }, React.createElement(Input, {
+        "type": "select",
+        "addonBefore": "船舶"
+      })), React.createElement(Col, {
+        "xs": 12.,
+        "sm": 6.,
+        "md": 3.
+      }, React.createElement(Input, {
+        "type": "select",
+        "addonBefore": "部门"
+      }, React.createElement("option", {
+        "value": "1"
+      }, "\u7532\u677f\u90e8"), React.createElement("option", {
+        "value": "2"
+      }, "\u8f6e\u673a\u90e8"))), React.createElement(Col, {
+        "xs": 12.,
+        "sm": 6.,
+        "md": 3.
+      }, React.createElement(Input, {
+        "type": "select",
+        "addonBefore": "计划月份"
+      }, React.createElement("option", {
+        "value": "1",
+        "selected": true
+      }, "1\u6708"), React.createElement("option", {
+        "value": "2"
+      }, "2\u6708"), React.createElement("option", {
+        "value": "3"
+      }, "3\u6708"), React.createElement("option", {
+        "value": "4"
+      }, "4\u6708"), React.createElement("option", {
+        "value": "5"
+      }, "5\u6708"), React.createElement("option", {
+        "value": "6"
+      }, "6\u6708"), React.createElement("option", {
+        "value": "7"
+      }, "7\u6708"), React.createElement("option", {
+        "value": "8"
+      }, "8\u6708"), React.createElement("option", {
+        "value": "9"
+      }, "9\u6708"), React.createElement("option", {
+        "value": "10"
+      }, "10\u6708"), React.createElement("option", {
+        "value": "11"
+      }, "11\u6708"), React.createElement("option", {
+        "value": "12"
+      }, "12\u6708"))), React.createElement(Col, {
+        "xs": 12.
+      }, React.createElement(ReactTable, React.__spread({}, tableProps)))))), React.createElement(Modal.Footer, null, React.createElement(Button, {
+        "bsStyle": "primary",
+        "onClick": this.save
+      }, "\u4fdd\u5b58"), React.createElement(Button, {
+        "onClick": this.props.closeHanele
+      }, "\u53d6\u6d88"))), React.createElement(AddItemModal, React.__spread({}, addItemModalProps)));
+    }
+  });
+
+  Page = React.createClass({
+    getInitialState: function() {
+      return {
+        showModal: false,
+        collection: []
+      };
+    },
+    closeHanele: function() {
+      return this.setState({
+        showModal: false
+      });
+    },
+    addButtonHandle: function() {
+      debugger;
+      return this.setState({
+        showModal: true,
+        action: "add",
+        collection: new SubList
+      });
+    },
+    detailButtonHandle: function() {
+      return this.setState({
+        showModal: true,
+        action: "detial",
+        collection: new SubList
+      });
+    },
+    editButtonHandle: function() {
+      return this.setState({
+        showModal: true,
+        action: "edit",
+        collection: new SubList
+      });
+    },
+    verifyButtonHandle: function() {},
     searchHandle: function() {
       return alert("");
     },
     render: function() {
-      var tableProps, that;
+      var detailModalProps, tableProps, that;
       that = this;
       tableProps = {
         collection: mainList,
@@ -159,10 +366,15 @@
             text: "新增",
             command: "add",
             onclick: function(e) {
-              e.preventDefault();
-              return that.setState({
-                showModal: true
-              });
+              that.addButtonHandle();
+              return e.preventDefault();
+            }
+          }, {
+            text: "编辑",
+            command: "edit",
+            onclick: function(model, e) {
+              that.detailButtonHandle();
+              return e.preventDefault();
             }
           }
         ],
@@ -171,12 +383,14 @@
             text: "详情",
             command: "detail",
             onclick: function(model, e) {
+              that.detailButtonHandle();
               return e.preventDefault();
             }
           }, {
             text: "编辑",
             command: "edit",
             onclick: function(model, e) {
+              that.editButtonHandle();
               return e.preventDefault();
             }
           }, {
@@ -187,6 +401,13 @@
             command: "verify"
           }
         ]
+      };
+      debugger;
+      detailModalProps = {
+        collection: this.state.collection,
+        show: this.state.showModal,
+        action: this.state.action,
+        closeHanele: this.closeHanele
       };
       return React.createElement(Grid, {
         "fluid": true
@@ -235,19 +456,10 @@
       }, "\u6253\u5370")), React.createElement(Col, {
         "xs": 12.,
         "id": "mainTable"
-      }, React.createElement(ReactTable, React.__spread({}, tableProps)))), React.createElement(Modal, {
-        "show": this.state.showModal,
-        "onHide": this.close
-      }, React.createElement(Modal.Header, {
-        "closeButton": true
-      }, React.createElement(Modal.Title, {
-        "id": "contained-modal-title-lg"
-      }, "Modal heading")), React.createElement(Modal.Body, null, React.createElement("h4", null, "Wrapped Text"), React.createElement("p", null, "Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros."), React.createElement("p", null, "Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor."), React.createElement("p", null, "Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla."), React.createElement("p", null, "Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros."), React.createElement("p", null, "Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor."), React.createElement("p", null, "Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla."), React.createElement("p", null, "Cras mattis consectetur purus sit amet fermentum. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Morbi leo risus, porta ac consectetur ac, vestibulum at eros."), React.createElement("p", null, "Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor."), React.createElement("p", null, "Aenean lacinia bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Donec sed odio dui. Donec ullamcorper nulla non metus auctor fringilla.")), React.createElement(Modal.Footer, null, React.createElement(Button, {
-        "onClick": this.props.onHide
-      }, "Close"))));
+      }, React.createElement(ReactTable, React.__spread({}, tableProps)))), React.createElement(DetailModal, React.__spread({}, detailModalProps)));
     }
   });
 
-  React.render(React.createElement(Page, null), $("body")[0]);
+  ReactDOM.render(React.createElement(Page, null), $("body")[0]);
 
 }).call(this);

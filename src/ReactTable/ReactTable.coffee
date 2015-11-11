@@ -214,7 +214,7 @@ Table = React.createClass
               props.icon = "glyphicon glyphicon-plus"
           else
               props.handleClick = btn.onclick ? _.noop()
-              props.className =  btn.btnClass ? "btn btn-xs btn-info"
+              props.className =  btn.btnClass ? "btn btn-sm btn-info"
               props.icon = btn.iconClass ? "glyphicon glyphicon-list"
           <button className={props.className} style={{marginRight:5}} onClick={props.handleClick}>
             <span className={props.icon}></span> {btn.text}

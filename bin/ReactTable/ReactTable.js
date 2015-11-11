@@ -328,7 +328,7 @@
               props.icon = "glyphicon glyphicon-plus";
             } else {
               props.handleClick = (ref = btn.onclick) != null ? ref : _.noop();
-              props.className = (ref1 = btn.btnClass) != null ? ref1 : "btn btn-xs btn-info";
+              props.className = (ref1 = btn.btnClass) != null ? ref1 : "btn btn-sm btn-info";
               props.icon = (ref2 = btn.iconClass) != null ? ref2 : "glyphicon glyphicon-list";
             }
             results.push(React.createElement("button", {
