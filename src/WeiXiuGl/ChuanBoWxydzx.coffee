@@ -1,30 +1,6 @@
 #_.extend  window, ReactBootstrap
 {Grid,Row,Col,Input,Button,Breadcrumb,BreadcrumbItem,Modal}=ReactBootstrap
 
-#从表model
-SubModel = Backbone.Model.extend
-    schema:
-        XH:
-            type:"Text"
-            title:"编号"
-            readonly:false
-        MC:
-            type:"Text"
-            title:"项目名称"
-            readonly:true
-        JHWCSJ:
-            type:"DateTime"
-            title:"计划完成日期"
-        FZR:
-            type:"Text"
-            title:"负责人"
-            readonly:true
-
-SubList = Backbone.Collection.extend
-  url:""
-  model:SubModel
-
-
 #主表model
 MainModel = Backbone.Model.extend
             idAttribute:"DJHM"
@@ -36,6 +12,7 @@ MainModel = Backbone.Model.extend
                 CBBH:
                     type:"Select"
                     title:"船舶"
+                    options:[]
                 WXBM:
                     type:"Select"
                     title:"部门"
@@ -63,13 +40,33 @@ MainModel = Backbone.Model.extend
                          {label:"未审核",val:"0"}
                          {label:"已审核",val:"1"}
                     ]
-
-
 MainList = Backbone.Collection.extend
     url: "/api/tbinv_cbwxydjhzb"
     #url:"api/ShipEquipment"
     model: MainModel
 mainList = new MainList
+
+#从表model
+SubModel = Backbone.Model.extend
+    schema:
+        XH:
+            type:"Text"
+            title:"编号"
+            readonly:false
+        MC:
+            type:"Text"
+            title:"项目名称"
+            readonly:true
+        JHWCSJ:
+            type:"DateTime"
+            title:"计划完成日期"
+        FZR:
+            type:"Text"
+            title:"负责人"
+            readonly:true
+SubList = Backbone.Collection.extend
+  url:""
+  model:SubModel
 
 
 #弹出维修项目列表Model
@@ -95,156 +92,46 @@ ItemModel = Backbone.Model.extend
         BZ:
             type:"Text"
             title:"备注"
-
-
 ItemModelList = Backbone.Collection.extend
     url:""
     model:ItemModel
-itemModelList = new ItemModelList
-
-AddItemModal = React.createClass
-  getInitialState:->
-    show:false
-  componentWillReceiveProps:(nextProps)->
-    @setState show:nextProps.show
-  render:->
-    tableProps =
-          collection:itemModelList
-          readonly:true
-          rowButtons:[
-            {
-              text:"选择"
-              command:"select"
-              onClick:->
-                alert("")
-            }
-          ]
-    <Modal show={@state.show} onHide={@props.closeHanele}>
-      <Modal.Header closeButton>
-        <Modal.Title>请选择您要添加的项目</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-      <ReactTable {...tableProps} />
-      </Modal.Body>
-    </Modal>
 
 
-DetailModal = React.createClass
-  getInitialState:->
-    show:false
-    showModal:false
-  closeModal:->
-    @setState showModal:false
-  componentWillReceiveProps:(nextProps)->
-    @setState   show:nextProps.show
-  save:->
-  render:->
-    that = @
-    headerTexts =
-      detail:"月度维修保养计划详情"
-      edit:"月度维修保养计划编辑"
-      add:"新增月度维修保养计划"
-
-
-    tableProps =
-          collection:@props.collection
-          readonly:true
-    if(@props.action in ["edit","add"])
-      _.extend tableProps,
-        headerButtons:[
-          {
-            text:"新增"
-            command:"add"
-            onclick:(e)->
-              that.setState showModal:true
-              e.preventDefault()
-          }
-        ]
-        rowButtons:[
-          {
-            text:"删除"
-            command:"delete"
-          }
-        ]
-    addItemModalProps =
-      show:@state.showModal
-      closeHanele:@closeModal
+PageControl = Backbone.View.extend
+  initialize:->
+  searchButtonClick:(data)->
     debugger
-    <div>
-      <Modal bsSize="large" show={@state.show}  onHide={@props.closeHanele}>
-        <Modal.Header closeButton>
-          <Modal.Title>{headerTexts[@props.action]}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Grid fluid=true>
-            <Row className="show-grid">
-              <Col xs={12}>
-              </Col>
-              <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="计划年度" >
-                  <option value="2015" selected="">2015</option>
-                  <option value="2016">2016</option>
-                  <option value="2016">2017</option>
-                  <option value="2016">2018</option>
-                  <option value="2016">2019</option>
-                </Input>
-              </Col>
-              <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="船舶" />
-              </Col>
-              <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="部门" >
-                  <option value="1">甲板部</option>
-                  <option value="2">轮机部</option>
-                </Input>
-              </Col>
-              <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="计划月份">
-                  <option value="1" selected>1月</option>
-                  <option value="2" >2月</option>
-                  <option value="3" >3月</option>
-                  <option value="4" >4月</option>
-                  <option value="5" >5月</option>
-                  <option value="6" >6月</option>
-                  <option value="7" >7月</option>
-                  <option value="8" >8月</option>
-                  <option value="9" >9月</option>
-                  <option value="10">10月</option>
-                  <option value="11">11月</option>
-                  <option value="12">12月</option>
-                </Input>
-              </Col>
-              <Col xs={12}>
-                <ReactTable {...tableProps}/>
-              </Col>
-            </Row>
-          </Grid>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button bsStyle="primary" onClick={@save}>保存</Button>
-          <Button  onClick={@props.closeHanele}>取消</Button>
-        </Modal.Footer>
-      </Modal>
-      <AddItemModal {...addItemModalProps}/>
-    </div>
+    alert ""
+    mainList.fetch
+      reset:true
+      data:data
+      async:true
+    @render()
+  render:->
+    ReactDOM.render <Page searchButtonClick={@searchButtonClick.bind(@)}></Page>,$("#iframePageContainer")[0]
 
+#页面视图
 Page = React.createClass
+  mixins:[React.addons.LinkedStateMixin]
   getInitialState:->
     showModal: false
-    collection:[]
+    action:""
   closeHanele:->
     this.setState({ showModal: false })
   addButtonHandle:->
-    debugger
-    @setState showModal:true,action:"add",collection:new SubList
-  detailButtonHandle:->
-    @setState showModal:true,action:"detial",collection:new SubList
+    model = new MainModel
+    @setState showModal:true,action:"add",model:model
+  detailButtonHandle:(model)->
+    model.fetch wait:true
+    @setState showModal:true,action:"detail",model:model
   editButtonHandle:->
-    @setState showModal:true,action:"edit",collection:new SubList
+    @setState showModal:true,action:"edit",model:model
   verifyButtonHandle:->
 
   searchHandle:->
-    alert("")
+    {jhnd,cb,bm}=@state
+    obj = {jhnd,cb,bm}
+    @props.searchButtonClick(obj)
   render:->
     that = @
     tableProps =
@@ -256,13 +143,6 @@ Page = React.createClass
               command:"add"
               onclick:(e)->
                 that.addButtonHandle()
-                e.preventDefault()
-            }
-            {
-              text:"编辑"
-              command:"edit"
-              onclick:(model,e)->
-                that.detailButtonHandle()
                 e.preventDefault()
             }
           ]
@@ -292,11 +172,7 @@ Page = React.createClass
 
           ]
       debugger
-      detailModalProps =
-        collection:@state.collection
-        show:@state.showModal
-        action:@state.action
-        closeHanele:@closeHanele
+
       <Grid fluid=true>
         <Row className="show-grid">
           <Col xs={12}>
@@ -307,16 +183,25 @@ Page = React.createClass
             </Breadcrumb>
           </Col>
           <Col xs={12} sm={6} md={2}>
-            <Input type="select" addonBefore="计划年度" />
+            <Input type="select" addonBefore="计划年度" valueLink={@linkState("jhnd")}>
+              <option value="2015" selected="">2015</option>
+              <option value="2016">2016</option>
+              <option value="2016">2017</option>
+              <option value="2016">2018</option>
+              <option value="2016">2019</option>
+            </Input>
           </Col>
           <Col xs={12} sm={6} md={2}>
-            <Input type="select" addonBefore="船舶" />
+            <Input type="select" addonBefore="船舶" valueLink={@linkState("cb")}/>
           </Col>
           <Col xs={12} sm={6} md={2}>
-            <Input type="select" addonBefore="部门" />
+            <Input type="select" addonBefore="部门" valueLink={@linkState("bm")}>
+              <option value="1">甲板部</option>
+              <option value="2">轮机部</option>
+            </Input>
           </Col>
           <Col xs={12} sm={6} md={2}>
-            <Button bsStyle="primary" onClick={this.searchHandle} block>查询</Button>
+            <Button bsStyle="primary" onClick={@searchHandle} block>查询</Button>
           </Col>
           <Col xs={12} sm={6} md={2}>
             <Button bsStyle="info" block>打印</Button>
@@ -325,6 +210,180 @@ Page = React.createClass
             <ReactTable {...tableProps} />
           </Col>
         </Row>
-        <DetailModal {...detailModalProps}/>
+          {
+            do =>if @state.action isnt ""
+                  detailModalProps =
+                    model:@state.model
+                    show:@state.showModal
+                    action:@state.action
+                    closeHanele:@closeHanele
+                  <DetailModal {...detailModalProps}/>
+          }
       </Grid>
-ReactDOM.render <Page></Page>,$("body")[0]
+
+
+#明细视图
+DetailModal = React.createClass
+  mixins:[React.addons.LinkedStateMixin]
+  getInitialState:->
+    showModal:false
+    JHND:@props.model.get("JHND")
+    CBBH:@props.model.get("CBBH")
+    WXBM:@props.model.get("WXBM")
+    JHYF:@props.model.get("JHYF")
+  closeModal:->
+    @setState showModal:false
+  addButtonClick:->
+    itemModelList = new ItemModelList()
+    {JHND,CBBH,WXBM,JHYF} = @state
+    data = {JHND,CBBH,WXBM,JHYF}
+    itemModelList.fetch
+          url:"/WeiXiuGl/GetYearPlanData/"
+          data:data
+          type:"GET"
+          reset:true
+          async:false
+    @setState showModal:true,itemModelList:itemModelList
+  addItem:(model)->
+    @setState showModal:false
+  componentWillReceiveProps:(nextProps)->
+  save:->
+  render:->
+    that = @
+    action = @props.action
+    headerTexts =
+      detail:"月度维修保养计划详情"
+      edit:"月度维修保养计划编辑"
+      add:"新增月度维修保养计划"
+
+    if action is "add"
+      collection = new SubList()
+    else
+      collection = new SubList @props.model.get("tbinv_cbwxydjhcbs")
+    tableProps =
+          collection:collection
+          readonly:true
+    if(action in ["edit","add"])
+      _.extend tableProps,
+        headerButtons:[
+          {
+            text:"新增"
+            command:"add"
+            onclick:(e)->
+              that.addButtonClick()
+              e.preventDefault()
+          }
+        ]
+        rowButtons:[
+          {
+            text:"删除"
+            command:"delete"
+          }
+        ]
+
+    debugger
+    <div>
+      <Modal bsSize="large" show={@props.show}  onHide={@props.closeHanele}>
+        <Modal.Header closeButton>
+          <Modal.Title>{headerTexts[@props.action]}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Grid fluid=true>
+            <Row className="show-grid">
+              <Col xs={12}>
+              </Col>
+              <Col xs={12} sm={6} md={3}>
+                <Input type="select" addonBefore="计划年度" disabled={action is "detail"} valueLink={@linkState("jhnd")}>
+                  <option value="2015" selected="">2015</option>
+                  <option value="2016">2016</option>
+                  <option value="2016">2017</option>
+                  <option value="2016">2018</option>
+                  <option value="2016">2019</option>
+                </Input>
+              </Col>
+              <Col xs={12} sm={6} md={3}>
+                <Input type="select" addonBefore="船舶" disabled={action is "detail"} valueLink={@linkState("cb")}/>
+              </Col>
+              <Col xs={12} sm={6} md={3}>
+                <Input type="select" addonBefore="部门" disabled={action is "detail"} valueLink={@linkState("bm")}>
+                  <option value="1">甲板部</option>
+                  <option value="2">轮机部</option>
+                </Input>
+              </Col>
+              <Col xs={12} sm={6} md={3}>
+                <Input type="select" addonBefore="计划月份" disabled={action is "detail"} valueLink={@linkState("yf")}>
+                  <option value="1" selected>1月</option>
+                  <option value="2" >2月</option>
+                  <option value="3" >3月</option>
+                  <option value="4" >4月</option>
+                  <option value="5" >5月</option>
+                  <option value="6" >6月</option>
+                  <option value="7" >7月</option>
+                  <option value="8" >8月</option>
+                  <option value="9" >9月</option>
+                  <option value="10">10月</option>
+                  <option value="11">11月</option>
+                  <option value="12">12月</option>
+                </Input>
+              </Col>
+              <Col xs={12}>
+                <ReactTable {...tableProps}/>
+              </Col>
+            </Row>
+          </Grid>
+        </Modal.Body>
+        <Modal.Footer>
+          {do =>
+              if action isnt "detail"
+                [
+                  <Button bsStyle="primary" onClick={@save}>保存</Button>
+                  <Button  onClick={@props.closeHanele}>取消</Button>
+                ]
+          }
+        </Modal.Footer>
+      </Modal>
+        {
+          do =>
+            if @state.showModal is true
+              addItemModalProps =
+                show:@state.showModal
+                closeHanele:@closeModal
+                selectItemHandle:@addItem
+                collection:@state.itemModelList
+              <AddItemModal {...addItemModalProps}/>
+        }
+    </div>
+
+
+
+#添加选项视图
+AddItemModal = React.createClass
+  componentWillReceiveProps:(nextProps)->
+  render:->
+    debugger
+    that = @
+    tableProps =
+          collection:that.props.collection
+          readonly:true
+          rowButtons:[
+            {
+              text:"选择"
+              command:"select"
+              onClick:that.props.selectItemHandle
+            }
+          ]
+    <Modal show={@props.show} onHide={@props.closeHanele}>
+      <Modal.Header closeButton>
+        <Modal.Title>请选择您要添加的项目</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+      <ReactTable {...tableProps} />
+      </Modal.Body>
+    </Modal>
+
+
+
+
+
+
+pageView = new PageControl().render()
