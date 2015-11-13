@@ -154,16 +154,11 @@
       }, {
         text: "编辑",
         command: "edit",
-        onclick: function(model, e) {
-          debugger;
-          return e.preventDefault();
-        }
+        onclick: function(model, e) {}
       }, {
         text: "删除",
         command: "delete",
-        onclick: function(model, e) {
-          return e.preventDefault();
-        }
+        onclick: function(model, e) {}
       }, {
         text: "审核",
         command: "verify",

@@ -29,7 +29,7 @@
   };
 
   TextCell = React.createClass({
-    mixins: [React.addons.PureRenderMixin, React.addons.LinkedStateMixin, CellMixin],
+    mixins: [React.addons.LinkedStateMixin, CellMixin],
     render: function() {
       var cellStyle, inputStyle;
       cellStyle = {
@@ -60,7 +60,7 @@
   });
 
   CheckBoxCell = React.createClass({
-    mixins: [React.addons.PureRenderMixin, React.addons.LinkedStateMixin, CellMixin],
+    mixins: [React.addons.LinkedStateMixin, CellMixin],
     componentWillMount: function() {
       return this.setState({
         value: this.props.value === "1" ? true : false
@@ -107,7 +107,7 @@
   });
 
   SelectCell = React.createClass({
-    mixins: [React.addons.PureRenderMixin, React.addons.LinkedStateMixin, CellMixin],
+    mixins: [React.addons.LinkedStateMixin, CellMixin],
     getDisplayValue: function() {
       var displayValue, i, len, opt, ref;
       ref = this.props.schema.options;
@@ -159,7 +159,7 @@
   });
 
   DateTimeCell = React.createClass({
-    mixins: [React.addons.PureRenderMixin, React.addons.LinkedStateMixin, CellMixin],
+    mixins: [React.addons.LinkedStateMixin, CellMixin],
     componentWillMount: function() {
       return this.setState({
         value: this.props.value

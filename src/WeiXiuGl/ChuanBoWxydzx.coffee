@@ -1,18 +1,42 @@
 #_.extend  window, ReactBootstrap
 {Grid,Row,Col,Input,Button,Breadcrumb,BreadcrumbItem,Modal}=ReactBootstrap
 
+
+#加载下拉框数据源
+getSelectData = (code)->
+  array = []
+  $.ajax
+    url:"/GetSelectData/Get"
+    data:"FieldName="+code
+    async:false
+    success:(data)->
+      array = data
+  array
+
+cbSelectData = getSelectData("CBBH")
+
+
 #主表model
 MainModel = Backbone.Model.extend
             idAttribute:"DJHM"
             urlRoot:"/api/tbinv_cbwxydjhzb"
+            defaults:
+              CBBH:"1"
+              WXBM:"1"
+              JHND:"2015"
+              JHYF:"1"
             schema:
                 DJHM:
-                    type:"Select"
+                    type:"Text"
                     title:"单据号码"
                 CBBH:
                     type:"Select"
                     title:"船舶"
-                    options:[]
+                    options:do ->
+                      for i in cbSelectData
+                        item = {}
+                        [item.label,item.val]=[i.mc,i.dm]
+                        item
                 WXBM:
                     type:"Select"
                     title:"部门"
@@ -52,7 +76,12 @@ SubModel = Backbone.Model.extend
         XH:
             type:"Text"
             title:"编号"
-            readonly:false
+            readonly:true
+            sortValue:(model)->
+                xh = model.get("XH")
+                arr = xh.split('.');
+                xh = arr[0]+arr[1]
+                xh = parseInt xh
         MC:
             type:"Text"
             title:"项目名称"
@@ -60,6 +89,7 @@ SubModel = Backbone.Model.extend
         JHWCSJ:
             type:"DateTime"
             title:"计划完成日期"
+            readonly:false
         FZR:
             type:"Text"
             title:"负责人"
@@ -76,6 +106,11 @@ ItemModel = Backbone.Model.extend
         XH:
             type:"Text"
             title:"编号"
+            sortValue:(model)->
+                xh = model.get("XH")
+                arr = xh.split('.');
+                xh = arr[0]+arr[1]
+                xh = parseInt xh
             readonly:false
         MC:
             type:"Text"
@@ -97,18 +132,18 @@ ItemModelList = Backbone.Collection.extend
     model:ItemModel
 
 
+
+
 PageControl = Backbone.View.extend
   initialize:->
   searchButtonClick:(data)->
-    debugger
-    alert ""
-    mainList.fetch
+    this.collection.fetch
       reset:true
       data:data
-      async:true
+      async:false
     @render()
   render:->
-    ReactDOM.render <Page searchButtonClick={@searchButtonClick.bind(@)}></Page>,$("#iframePageContainer")[0]
+    ReactDOM.render <Page collection={@collection} searchButtonClick={@searchButtonClick.bind(@)}></Page>,$("#iframePageContainer")[0]
 
 #页面视图
 Page = React.createClass
@@ -122,9 +157,14 @@ Page = React.createClass
     model = new MainModel
     @setState showModal:true,action:"add",model:model
   detailButtonHandle:(model)->
-    model.fetch wait:true
+    model.fetch
+      wait:true
+      async:false
     @setState showModal:true,action:"detail",model:model
-  editButtonHandle:->
+  editButtonHandle:(model)->
+    model.fetch
+      wait:true
+      async:false
     @setState showModal:true,action:"edit",model:model
   verifyButtonHandle:->
 
@@ -135,7 +175,7 @@ Page = React.createClass
   render:->
     that = @
     tableProps =
-          collection:mainList
+          collection:@props.collection
           readonly:true
           headerButtons:[
             {
@@ -151,14 +191,14 @@ Page = React.createClass
               text:"详情"
               command:"detail"
               onclick:(model,e)->
-                that.detailButtonHandle()
+                that.detailButtonHandle(model)
                 e.preventDefault()
             }
             {
               text:"编辑"
               command:"edit"
               onclick:(model,e)->
-                that.editButtonHandle()
+                that.editButtonHandle(model)
                 e.preventDefault()
             }
             {
@@ -184,7 +224,7 @@ Page = React.createClass
           </Col>
           <Col xs={12} sm={6} md={2}>
             <Input type="select" addonBefore="计划年度" valueLink={@linkState("jhnd")}>
-              <option value="2015" selected="">2015</option>
+              <option value="2015">2015</option>
               <option value="2016">2016</option>
               <option value="2016">2017</option>
               <option value="2016">2018</option>
@@ -192,7 +232,13 @@ Page = React.createClass
             </Input>
           </Col>
           <Col xs={12} sm={6} md={2}>
-            <Input type="select" addonBefore="船舶" valueLink={@linkState("cb")}/>
+            <Input type="select" addonBefore="船舶" valueLink={@linkState("cb")}>
+              {
+                do =>
+                  for i in cbSelectData
+                    <option value=i.dm>{i.mc}</option>
+              }
+            </Input>
           </Col>
           <Col xs={12} sm={6} md={2}>
             <Input type="select" addonBefore="部门" valueLink={@linkState("bm")}>
@@ -226,7 +272,6 @@ Page = React.createClass
 DetailModal = React.createClass
   mixins:[React.addons.LinkedStateMixin]
   getInitialState:->
-    showModal:false
     JHND:@props.model.get("JHND")
     CBBH:@props.model.get("CBBH")
     WXBM:@props.model.get("WXBM")
@@ -245,8 +290,20 @@ DetailModal = React.createClass
           async:false
     @setState showModal:true,itemModelList:itemModelList
   addItem:(model)->
+    debugger
     @setState showModal:false
+  componentWillMount:->
+    if @state.action is "add"
+      collection = new SubList()
+    else
+      collection = new SubList @props.model.get("tbinv_cbwxydjhcbs")
+    @collection = collection
   componentWillReceiveProps:(nextProps)->
+    @setState
+      JHND:nextProps.model.get("JHND")
+      CBBH:nextProps.model.get("CBBH")
+      WXBM:nextProps.model.get("WXBM")
+      JHYF:nextProps.model.get("JHYF")
   save:->
   render:->
     that = @
@@ -256,18 +313,21 @@ DetailModal = React.createClass
       edit:"月度维修保养计划编辑"
       add:"新增月度维修保养计划"
 
-    if action is "add"
-      collection = new SubList()
-    else
-      collection = new SubList @props.model.get("tbinv_cbwxydjhcbs")
+    # if action is "add"
+    #   collection = new SubList()
+    # else
+    #   collection = new SubList @props.model.get("tbinv_cbwxydjhcbs")
+    # @collection = collection
     tableProps =
-          collection:collection
+          collection:@collection
           readonly:true
+          sortField:"XH"
     if(action in ["edit","add"])
       _.extend tableProps,
+        readonly:false
         headerButtons:[
           {
-            text:"新增"
+            text:"从年度计划添加项目"
             command:"add"
             onclick:(e)->
               that.addButtonClick()
@@ -278,6 +338,10 @@ DetailModal = React.createClass
           {
             text:"删除"
             command:"delete"
+            onclick:(model,e)->
+              that.collection.remove(model)
+              that.forceUpdate()
+              e.preventDefault()
           }
         ]
 
@@ -293,7 +357,7 @@ DetailModal = React.createClass
               <Col xs={12}>
               </Col>
               <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="计划年度" disabled={action is "detail"} valueLink={@linkState("jhnd")}>
+                <Input type="select" addonBefore="计划年度" disabled={action in ["detail","edit"]} valueLink={@linkState("JHND")}>
                   <option value="2015" selected="">2015</option>
                   <option value="2016">2016</option>
                   <option value="2016">2017</option>
@@ -302,16 +366,22 @@ DetailModal = React.createClass
                 </Input>
               </Col>
               <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="船舶" disabled={action is "detail"} valueLink={@linkState("cb")}/>
+                <Input type="select" addonBefore="船舶" disabled={action in ["detail","edit"]} valueLink={@linkState("CBBH")}>
+                  {
+                    do =>
+                      for i in cbSelectData
+                        <option value=i.dm>{i.mc}</option>
+                  }
+                </Input>
               </Col>
               <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="部门" disabled={action is "detail"} valueLink={@linkState("bm")}>
+                <Input type="select" addonBefore="部门" disabled={action in ["detail","edit"]} valueLink={@linkState("WXBM")}>
                   <option value="1">甲板部</option>
                   <option value="2">轮机部</option>
                 </Input>
               </Col>
               <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="计划月份" disabled={action is "detail"} valueLink={@linkState("yf")}>
+                <Input type="select" addonBefore="计划月份" disabled={action in ["detail","edit"]} valueLink={@linkState("JHYF")}>
                   <option value="1" selected>1月</option>
                   <option value="2" >2月</option>
                   <option value="3" >3月</option>
@@ -365,11 +435,14 @@ AddItemModal = React.createClass
     tableProps =
           collection:that.props.collection
           readonly:true
+          sortField:"XH"
           rowButtons:[
             {
               text:"选择"
               command:"select"
-              onClick:that.props.selectItemHandle
+              onclick:(model)->
+                debugger
+                that.props.selectItemHandle(model)
             }
           ]
     <Modal show={@props.show} onHide={@props.closeHanele}>
@@ -381,9 +454,4 @@ AddItemModal = React.createClass
       </Modal.Body>
     </Modal>
 
-
-
-
-
-
-pageView = new PageControl().render()
+pageView = new PageControl({collection:mainList}).render()

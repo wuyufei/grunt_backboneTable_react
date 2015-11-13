@@ -119,14 +119,13 @@ table = new TableView
       text:"编辑"
       command:"edit"
       onclick:(model,e)->
-        debugger
-        e.preventDefault()
+
     }
     {
       text:"删除"
       command:"delete"
       onclick:(model,e)->
-       e.preventDefault()
+
     }
     {
       text:"审核"

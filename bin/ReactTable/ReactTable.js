@@ -141,7 +141,7 @@
             }
           };
         })(this)(),
-        sortField: null,
+        sortField: this.props.sortField,
         sortDir: "asc",
         currentPage: 0,
         editRow: null,
@@ -201,13 +201,16 @@
     },
     sortCollection: function() {
       debugger;
-      var sortModels, that;
+      var getSortValue, schema, sortModels, that;
       that = this;
       sortModels = _.clone(this.props.collection.models);
+      schema = this.props.collection.model.prototype.schema;
       if (this.state.sortField) {
+        getSortValue = schema[this.state.sortField].sortValue;
         sortModels.sort(function(a, b) {
-          a = a.get(that.state.sortField);
-          b = b.get(that.state.sortField);
+          var ref, ref1;
+          a = (ref = typeof getSortValue === "function" ? getSortValue(a) : void 0) != null ? ref : a.get(that.state.sortField);
+          b = (ref1 = typeof getSortValue === "function" ? getSortValue(b) : void 0) != null ? ref1 : b.get(that.state.sortField);
           if (_.isString(a)) {
             return a.localeCompare(b);
           } else {

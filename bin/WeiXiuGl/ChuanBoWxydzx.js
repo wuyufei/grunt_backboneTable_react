@@ -1,20 +1,52 @@
 (function() {
-  var AddItemModal, Breadcrumb, BreadcrumbItem, Button, Col, DetailModal, Grid, Input, ItemModel, ItemModelList, MainList, MainModel, Modal, Page, PageControl, Row, SubList, SubModel, mainList, pageView;
+  var AddItemModal, Breadcrumb, BreadcrumbItem, Button, Col, DetailModal, Grid, Input, ItemModel, ItemModelList, MainList, MainModel, Modal, Page, PageControl, Row, SubList, SubModel, cbSelectData, getSelectData, mainList, pageView;
 
   Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal;
+
+  getSelectData = function(code) {
+    var array;
+    array = [];
+    $.ajax({
+      url: "/GetSelectData/Get",
+      data: "FieldName=" + code,
+      async: false,
+      success: function(data) {
+        return array = data;
+      }
+    });
+    return array;
+  };
+
+  cbSelectData = getSelectData("CBBH");
 
   MainModel = Backbone.Model.extend({
     idAttribute: "DJHM",
     urlRoot: "/api/tbinv_cbwxydjhzb",
+    defaults: {
+      CBBH: "1",
+      WXBM: "1",
+      JHND: "2015",
+      JHYF: "1"
+    },
     schema: {
       DJHM: {
-        type: "Select",
+        type: "Text",
         title: "单据号码"
       },
       CBBH: {
         type: "Select",
         title: "船舶",
-        options: []
+        options: (function() {
+          var i, item, j, len, ref, results;
+          results = [];
+          for (j = 0, len = cbSelectData.length; j < len; j++) {
+            i = cbSelectData[j];
+            item = {};
+            ref = [i.mc, i.dm], item.label = ref[0], item.val = ref[1];
+            results.push(item);
+          }
+          return results;
+        })()
       },
       WXBM: {
         type: "Select",
@@ -73,7 +105,14 @@
       XH: {
         type: "Text",
         title: "编号",
-        readonly: false
+        readonly: true,
+        sortValue: function(model) {
+          var arr, xh;
+          xh = model.get("XH");
+          arr = xh.split('.');
+          xh = arr[0] + arr[1];
+          return xh = parseInt(xh);
+        }
       },
       MC: {
         type: "Text",
@@ -82,7 +121,8 @@
       },
       JHWCSJ: {
         type: "DateTime",
-        title: "计划完成日期"
+        title: "计划完成日期",
+        readonly: false
       },
       FZR: {
         type: "Text",
@@ -103,6 +143,13 @@
       XH: {
         type: "Text",
         title: "编号",
+        sortValue: function(model) {
+          var arr, xh;
+          xh = model.get("XH");
+          arr = xh.split('.');
+          xh = arr[0] + arr[1];
+          return xh = parseInt(xh);
+        },
         readonly: false
       },
       MC: {
@@ -136,17 +183,16 @@
   PageControl = Backbone.View.extend({
     initialize: function() {},
     searchButtonClick: function(data) {
-      debugger;
-      alert("");
-      mainList.fetch({
+      this.collection.fetch({
         reset: true,
         data: data,
-        async: true
+        async: false
       });
       return this.render();
     },
     render: function() {
       return ReactDOM.render(React.createElement(Page, {
+        "collection": this.collection,
         "searchButtonClick": this.searchButtonClick.bind(this)
       }), $("#iframePageContainer")[0]);
     }
@@ -176,7 +222,8 @@
     },
     detailButtonHandle: function(model) {
       model.fetch({
-        wait: true
+        wait: true,
+        async: false
       });
       return this.setState({
         showModal: true,
@@ -184,7 +231,11 @@
         model: model
       });
     },
-    editButtonHandle: function() {
+    editButtonHandle: function(model) {
+      model.fetch({
+        wait: true,
+        async: false
+      });
       return this.setState({
         showModal: true,
         action: "edit",
@@ -206,7 +257,7 @@
       var tableProps, that;
       that = this;
       tableProps = {
-        collection: mainList,
+        collection: this.props.collection,
         readonly: true,
         headerButtons: [
           {
@@ -223,14 +274,14 @@
             text: "详情",
             command: "detail",
             onclick: function(model, e) {
-              that.detailButtonHandle();
+              that.detailButtonHandle(model);
               return e.preventDefault();
             }
           }, {
             text: "编辑",
             command: "edit",
             onclick: function(model, e) {
-              that.editButtonHandle();
+              that.editButtonHandle(model);
               return e.preventDefault();
             }
           }, {
@@ -260,8 +311,7 @@
         "addonBefore": "计划年度",
         "valueLink": this.linkState("jhnd")
       }, React.createElement("option", {
-        "value": "2015",
-        "selected": ""
+        "value": "2015"
       }, "2015"), React.createElement("option", {
         "value": "2016"
       }, "2016"), React.createElement("option", {
@@ -278,7 +328,19 @@
         "type": "select",
         "addonBefore": "船舶",
         "valueLink": this.linkState("cb")
-      })), React.createElement(Col, {
+      }, (function(_this) {
+        return function() {
+          var i, j, len, results;
+          results = [];
+          for (j = 0, len = cbSelectData.length; j < len; j++) {
+            i = cbSelectData[j];
+            results.push(React.createElement("option", {
+              "value": i.dm
+            }, i.mc));
+          }
+          return results;
+        };
+      })(this)())), React.createElement(Col, {
         "xs": 12.,
         "sm": 6.,
         "md": 2.
@@ -329,7 +391,6 @@
     mixins: [React.addons.LinkedStateMixin],
     getInitialState: function() {
       return {
-        showModal: false,
         JHND: this.props.model.get("JHND"),
         CBBH: this.props.model.get("CBBH"),
         WXBM: this.props.model.get("WXBM"),
@@ -364,14 +425,31 @@
       });
     },
     addItem: function(model) {
+      debugger;
       return this.setState({
         showModal: false
       });
     },
-    componentWillReceiveProps: function(nextProps) {},
+    componentWillMount: function() {
+      var collection;
+      if (this.state.action === "add") {
+        collection = new SubList();
+      } else {
+        collection = new SubList(this.props.model.get("tbinv_cbwxydjhcbs"));
+      }
+      return this.collection = collection;
+    },
+    componentWillReceiveProps: function(nextProps) {
+      return this.setState({
+        JHND: nextProps.model.get("JHND"),
+        CBBH: nextProps.model.get("CBBH"),
+        WXBM: nextProps.model.get("WXBM"),
+        JHYF: nextProps.model.get("JHYF")
+      });
+    },
     save: function() {},
     render: function() {
-      var action, collection, headerTexts, tableProps, that;
+      var action, headerTexts, tableProps, that;
       that = this;
       action = this.props.action;
       headerTexts = {
@@ -379,20 +457,17 @@
         edit: "月度维修保养计划编辑",
         add: "新增月度维修保养计划"
       };
-      if (action === "add") {
-        collection = new SubList();
-      } else {
-        collection = new SubList(this.props.model.get("tbinv_cbwxydjhcbs"));
-      }
       tableProps = {
-        collection: collection,
-        readonly: true
+        collection: this.collection,
+        readonly: true,
+        sortField: "XH"
       };
       if ((action === "edit" || action === "add")) {
         _.extend(tableProps, {
+          readonly: false,
           headerButtons: [
             {
-              text: "新增",
+              text: "从年度计划添加项目",
               command: "add",
               onclick: function(e) {
                 that.addButtonClick();
@@ -403,7 +478,12 @@
           rowButtons: [
             {
               text: "删除",
-              command: "delete"
+              command: "delete",
+              onclick: function(model, e) {
+                that.collection.remove(model);
+                that.forceUpdate();
+                return e.preventDefault();
+              }
             }
           ]
         });
@@ -428,8 +508,8 @@
       }, React.createElement(Input, {
         "type": "select",
         "addonBefore": "计划年度",
-        "disabled": action === "detail",
-        "valueLink": this.linkState("jhnd")
+        "disabled": (action === "detail" || action === "edit"),
+        "valueLink": this.linkState("JHND")
       }, React.createElement("option", {
         "value": "2015",
         "selected": ""
@@ -448,17 +528,29 @@
       }, React.createElement(Input, {
         "type": "select",
         "addonBefore": "船舶",
-        "disabled": action === "detail",
-        "valueLink": this.linkState("cb")
-      })), React.createElement(Col, {
+        "disabled": (action === "detail" || action === "edit"),
+        "valueLink": this.linkState("CBBH")
+      }, (function(_this) {
+        return function() {
+          var i, j, len, results;
+          results = [];
+          for (j = 0, len = cbSelectData.length; j < len; j++) {
+            i = cbSelectData[j];
+            results.push(React.createElement("option", {
+              "value": i.dm
+            }, i.mc));
+          }
+          return results;
+        };
+      })(this)())), React.createElement(Col, {
         "xs": 12.,
         "sm": 6.,
         "md": 3.
       }, React.createElement(Input, {
         "type": "select",
         "addonBefore": "部门",
-        "disabled": action === "detail",
-        "valueLink": this.linkState("bm")
+        "disabled": (action === "detail" || action === "edit"),
+        "valueLink": this.linkState("WXBM")
       }, React.createElement("option", {
         "value": "1"
       }, "\u7532\u677f\u90e8"), React.createElement("option", {
@@ -470,8 +562,8 @@
       }, React.createElement(Input, {
         "type": "select",
         "addonBefore": "计划月份",
-        "disabled": action === "detail",
-        "valueLink": this.linkState("yf")
+        "disabled": (action === "detail" || action === "edit"),
+        "valueLink": this.linkState("JHYF")
       }, React.createElement("option", {
         "value": "1",
         "selected": true
@@ -538,11 +630,15 @@
       tableProps = {
         collection: that.props.collection,
         readonly: true,
+        sortField: "XH",
         rowButtons: [
           {
             text: "选择",
             command: "select",
-            onClick: that.props.selectItemHandle
+            onclick: function(model) {
+              debugger;
+              return that.props.selectItemHandle(model);
+            }
           }
         ]
       };
@@ -555,6 +651,8 @@
     }
   });
 
-  pageView = new PageControl().render();
+  pageView = new PageControl({
+    collection: mainList
+  }).render();
 
 }).call(this);

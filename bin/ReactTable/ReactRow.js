@@ -3,7 +3,7 @@
     hasProp = {}.hasOwnProperty;
 
   Row = React.createClass({
-    mixins: [React.addons.PureRenderMixin],
+    mixins: [],
     componentWillMount: function() {},
     getButtonProps: function(buttonInfo) {
       var btnProps, ref, ref1, ref2, that;
@@ -26,7 +26,7 @@
           btnProps.icon = "glyphicon glyphicon-trash";
           break;
         default:
-          btnProps.handleClick = (ref = buttonInfo.onclick) != null ? ref.bind(this, this.props.model) : void 0;
+          btnProps.handleClick = (ref = buttonInfo.onclick) != null ? typeof ref.bind === "function" ? ref.bind(this, this.props.model) : void 0 : void 0;
           btnProps.className = (ref1 = buttonInfo.btnClass) != null ? ref1 : "btn btn-xs btn-info";
           btnProps.icon = (ref2 = buttonInfo.iconClass) != null ? ref2 : "glyphicon glyphicon-list";
       }
