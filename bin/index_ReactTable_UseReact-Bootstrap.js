@@ -1,8 +1,6 @@
 (function() {
   var ReactTable, TableView, User, Users, table, template, users;
 
-  _.extend(window, ReactBootstrap);
-
   _.extend(Backbone.Model.prototype, Backbone.Validation.mixin);
 
   User = Backbone.Model.extend({
@@ -112,9 +110,18 @@
       this.options = {};
       return _.extend(this.options, options);
     },
+    selectedRowChange: function(model) {
+      return this.trigger("selectedRowChange", model);
+    },
     render: function() {
       debugger;
-      return ReactDOM.render(React.createElement(ReactTable, React.__spread({}, this.options)), this.el);
+      return React.render(React.createElement(ReactTable, React.__spread({}, this.options, {
+        "tableView": this
+      })), this.el);
+    },
+    remove: function() {
+      React.unmountComponentAtNode(this.el);
+      return TableView.__super__.remove.apply(this, arguments);
     }
   });
 
@@ -122,8 +129,13 @@
     el: $("#container"),
     collection: users,
     readonly: false,
-    cellClick: function(model, key) {},
-    cellDoubleClick: function(model, key) {},
+    cellClick: function(model, key) {
+      debugger;
+    },
+    cellDoubleClick: function(model, key) {
+      debugger;
+      return alert("双击");
+    },
     addButtonClick: function(e) {},
     headerButtons: [
       {
@@ -162,5 +174,25 @@
   });
 
   table.render();
+
+
+  /*tableProps =
+    collection:users
+    cellClick:(model,key)->
+      debugger
+      #alert("单击")
+    cellDoubleClick:(model,key)->
+      debugger
+      alert("双击")
+    buttons:[
+      {text:"详情", command:"detail"}
+      {text:"编辑", command:"edit"}
+      {text:"删除", command:"delete"}
+      {text:"删除", command:"delete"}
+      {text:"删除", command:"delete"}
+    ]
+  React.render <ReactTable {...tableProps}></ReactTable>,
+    document.getElementById 'container'
+   */
 
 }).call(this);

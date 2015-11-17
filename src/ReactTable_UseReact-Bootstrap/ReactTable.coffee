@@ -64,6 +64,9 @@ ActionMixin =
           return
       React.render <ModalInfo {...modalInfoProps} />,$("<div>").appendTo($("body"))[0]
 
+
+
+
 Table = React.createClass
     mixins:[ActionMixin]
     getInitialState:->
@@ -72,7 +75,7 @@ Table = React.createClass
           return @props.collection.at(0).cid
         else
           null
-      sortField:null
+      sortField:@props.sortField
       sortDir:"asc"
       currentPage:0
       editRow:null
@@ -120,12 +123,16 @@ Table = React.createClass
     sortCollection:->
         debugger
         that = @
-
         sortModels = _.clone @props.collection.models
+
+        schema = @props.collection.model::schema
+
+
         if @state.sortField
+          getSortValue = schema[@state.sortField].sortValue
           sortModels.sort (a,b)->
-            a = a.get(that.state.sortField)
-            b = b.get(that.state.sortField)
+            a = getSortValue?(a) ? a.get(that.state.sortField)
+            b = getSortValue?(b) ? b.get(that.state.sortField)
             if _.isString(a)
               return a.localeCompare(b);
             else
@@ -133,8 +140,6 @@ Table = React.createClass
           if @state.sortDir is "desc"
             sortModels.reverse()
         sortModels
-
-
 
 
     cellBeginEdit:(model,key)->

@@ -20,7 +20,7 @@ CellMixin =
 
 
 TextCell = React.createClass
-    mixins:[React.addons.PureRenderMixin,React.addons.LinkedStateMixin,CellMixin]
+    mixins:[React.addons.LinkedStateMixin,CellMixin]
     render:->
       cellStyle =
         padding:0
@@ -35,7 +35,7 @@ TextCell = React.createClass
         <td  onDoubleClick={@props.cellDoubleClick} onClick={@props.cellClick}>{@state.value}</td>
 
 CheckBoxCell = React.createClass
-  mixins:[React.addons.PureRenderMixin,React.addons.LinkedStateMixin,CellMixin]
+  mixins:[React.addons.LinkedStateMixin,CellMixin]
   componentWillMount:->
      @setState value:if @props.value is "1" then true else false
   render:->
@@ -63,7 +63,7 @@ CheckBoxCell = React.createClass
 
 
 SelectCell = React.createClass
-    mixins:[React.addons.PureRenderMixin,React.addons.LinkedStateMixin,CellMixin]
+    mixins:[React.addons.LinkedStateMixin,CellMixin]
     getDisplayValue:->
       for opt in @props.schema.options when opt.val is @state.value
         displayValue = opt.label
@@ -87,7 +87,7 @@ SelectCell = React.createClass
 
 
 DateTimeCell = React.createClass
-    mixins:[React.addons.PureRenderMixin,React.addons.LinkedStateMixin,CellMixin]
+    mixins:[React.addons.LinkedStateMixin,CellMixin]
     componentWillMount:->
       @setState value: @props.value
     closeButtonClick:(e)->

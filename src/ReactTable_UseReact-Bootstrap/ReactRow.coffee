@@ -1,5 +1,5 @@
 Row = React.createClass
-  mixins:[React.addons.PureRenderMixin]
+  mixins:[]
   componentWillMount:->
   getButtonProps:(buttonInfo)->
     that = @
@@ -18,7 +18,7 @@ Row = React.createClass
           btnProps.className = "btn btn-xs btn-danger"
           btnProps.icon="glyphicon glyphicon-trash"
         else
-          btnProps.handleClick = buttonInfo.onclick?.bind(@,@props.model)
+          btnProps.handleClick = buttonInfo.onclick?.bind?(@,@props.model)
           btnProps.className = buttonInfo.btnClass ? "btn btn-xs btn-info"
           btnProps.icon = buttonInfo.iconClass ? "glyphicon glyphicon-list"
       btnProps

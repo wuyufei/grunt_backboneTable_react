@@ -1,5 +1,4 @@
-
-_.extend  window, ReactBootstrap
+#添加backbone.Validate插件支持
 _.extend Backbone.Model.prototype, Backbone.Validation.mixin
 User = Backbone.Model.extend
   idAttribute:"id"
@@ -79,18 +78,28 @@ TableView = Backbone.View.extend
     this.listenTo @collection,"reset add remove change",@render.bind(this)
     this.options = {}
     _.extend this.options,options
+  selectedRowChange:(model)->
+    @.trigger("selectedRowChange",model)
   render:->
     debugger
-    ReactDOM.render <ReactTable {...@options}></ReactTable>,
+    React.render <ReactTable {...@options} tableView={@}></ReactTable>,
       @el
+  remove:->
+    React.unmountComponentAtNode(@el)
+    TableView.__super__.remove.apply(this,arguments)
 
 table = new TableView
   el:$("#container")
   collection:users
   readonly:false
   cellClick:(model,key)->
+    debugger
+    #alert("单击")
   cellDoubleClick:(model,key)->
+    debugger
+    alert("双击")
   addButtonClick:(e)->
+    #e.preventDefault()
   headerButtons:[
     {
       text:"新增"
@@ -129,3 +138,21 @@ table = new TableView
   ]
 
 table.render()
+
+###tableProps =
+  collection:users
+  cellClick:(model,key)->
+    debugger
+    #alert("单击")
+  cellDoubleClick:(model,key)->
+    debugger
+    alert("双击")
+  buttons:[
+    {text:"详情", command:"detail"}
+    {text:"编辑", command:"edit"}
+    {text:"删除", command:"delete"}
+    {text:"删除", command:"delete"}
+    {text:"删除", command:"delete"}
+  ]
+React.render <ReactTable {...tableProps}></ReactTable>,
+  document.getElementById 'container'###
