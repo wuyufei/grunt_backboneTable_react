@@ -1,7 +1,7 @@
 (function() {
-  var AddItemModal, Breadcrumb, BreadcrumbItem, Button, Col, DetailModal, Grid, Input, ItemModel, ItemModelList, MainList, MainModel, Modal, Page, PageControl, Row, SubList, SubModel, cbSelectData, getSelectData, mainList, pageView;
+  var AddItemModal, Breadcrumb, BreadcrumbItem, Button, Col, DetailModal, Grid, Input, ItemModel, ItemModelList, MainList, MainModel, Modal, Overlay, Page, PageControl, Popover, Row, SubList, SubModel, cbSelectData, getSelectData, mainList, pageView;
 
-  Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal;
+  Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal, Overlay = ReactBootstrap.Overlay, Popover = ReactBootstrap.Popover;
 
   getSelectData = function(code) {
     var array;
@@ -27,6 +27,24 @@
       WXBM: "1",
       JHND: "2015",
       JHYF: "1"
+    },
+    validation: {
+      CBBH: {
+        required: true,
+        msg: "请选择船舶"
+      },
+      WXBM: {
+        required: true,
+        msg: "请选择部门"
+      },
+      JHND: {
+        required: true,
+        msg: "请选择计划年度"
+      },
+      JHYF: {
+        required: true,
+        msg: "请选择计划月份"
+      }
     },
     schema: {
       DJHM: {
@@ -181,7 +199,36 @@
   });
 
   PageControl = Backbone.View.extend({
-    initialize: function() {},
+    initialize: function() {
+      return this.listenTo(this.collection, "add remove reset destroy", this.render);
+    },
+    save: function(model, data) {
+      var isNew, that, validated;
+      that = this;
+      validated = true;
+      isNew = model.isNew();
+      model.on("invalid", function(model, error) {
+        validated = false;
+        return that.trigger("setError", error);
+      });
+      model.set(data, {
+        validate: true
+      });
+      model.off("invalid");
+      if (validated) {
+        return model.save(null, {
+          success: function() {
+            that.trigger("saveSuccess");
+            if (isNew) {
+              return that.collection.add(model);
+            }
+          },
+          error: function(e) {
+            return that.trigger("saveError");
+          }
+        });
+      }
+    },
     searchButtonClick: function(data) {
       this.collection.fetch({
         reset: true,
@@ -203,8 +250,17 @@
     getInitialState: function() {
       return {
         showModal: false,
-        action: ""
+        action: "",
+        JHND: "2015",
+        CBBH: "1",
+        WXBM: "1"
       };
+    },
+    componentWillReceiveProps: function() {
+      return this.setState({
+        showModal: false,
+        action: ""
+      });
     },
     closeHanele: function() {
       return this.setState({
@@ -244,13 +300,9 @@
     },
     verifyButtonHandle: function() {},
     searchHandle: function() {
-      var bm, cb, jhnd, obj, ref;
-      ref = this.state, jhnd = ref.jhnd, cb = ref.cb, bm = ref.bm;
-      obj = {
-        jhnd: jhnd,
-        cb: cb,
-        bm: bm
-      };
+      debugger;
+      var obj;
+      obj = _.pick(this.state, "JHND", "CBBH", "WXBM");
       return this.props.searchButtonClick(obj);
     },
     render: function() {
@@ -309,7 +361,7 @@
       }, React.createElement(Input, {
         "type": "select",
         "addonBefore": "计划年度",
-        "valueLink": this.linkState("jhnd")
+        "valueLink": this.linkState("JHND")
       }, React.createElement("option", {
         "value": "2015"
       }, "2015"), React.createElement("option", {
@@ -327,7 +379,7 @@
       }, React.createElement(Input, {
         "type": "select",
         "addonBefore": "船舶",
-        "valueLink": this.linkState("cb")
+        "valueLink": this.linkState("CBBH")
       }, (function(_this) {
         return function() {
           var i, j, len, results;
@@ -347,7 +399,7 @@
       }, React.createElement(Input, {
         "type": "select",
         "addonBefore": "部门",
-        "valueLink": this.linkState("bm")
+        "valueLink": this.linkState("WXBM")
       }, React.createElement("option", {
         "value": "1"
       }, "\u7532\u677f\u90e8"), React.createElement("option", {
@@ -394,7 +446,8 @@
         JHND: this.props.model.get("JHND"),
         CBBH: this.props.model.get("CBBH"),
         WXBM: this.props.model.get("WXBM"),
-        JHYF: this.props.model.get("JHYF")
+        JHYF: this.props.model.get("JHYF"),
+        error: {}
       };
     },
     closeModal: function() {
@@ -403,15 +456,9 @@
       });
     },
     addButtonClick: function() {
-      var CBBH, JHND, JHYF, WXBM, data, itemModelList, ref;
+      var data, itemModelList;
       itemModelList = new ItemModelList();
-      ref = this.state, JHND = ref.JHND, CBBH = ref.CBBH, WXBM = ref.WXBM, JHYF = ref.JHYF;
-      data = {
-        JHND: JHND,
-        CBBH: CBBH,
-        WXBM: WXBM,
-        JHYF: JHYF
-      };
+      data = _.pick(this.state, "JHND", "CBBH", "WXBM", "JHYF");
       itemModelList.fetch({
         url: "/WeiXiuGl/GetYearPlanData/",
         data: data,
@@ -424,6 +471,30 @@
         itemModelList: itemModelList
       });
     },
+    valueChangeHandle: function(key, e) {
+      debugger;
+      var newValue;
+      newValue = {};
+      newValue[key] = e.target.value;
+      return this.setState(newValue, (function(_this) {
+        return function() {
+          var val;
+          val = _.pick(_this.state, "JHND", "CBBH", "WXBM", "JHYF");
+          if (val.JHND !== "" && val.CBBH !== "" && val.WXBM !== "" && val.JHYF !== "") {
+            _this.collection.fetch({
+              url: "/WeiXiuGl/GetNewMonthPlanData/",
+              data: val,
+              type: "GET",
+              reset: true,
+              async: false
+            });
+          } else {
+            _this.collection.reset();
+          }
+          return _this.forceUpdate();
+        };
+      })(this));
+    },
     addItem: function(model) {
       debugger;
       return this.setState({
@@ -431,23 +502,55 @@
       });
     },
     componentWillMount: function() {
-      var collection;
+      var collection, that;
+      that = this;
       if (this.state.action === "add") {
         collection = new SubList();
       } else {
         collection = new SubList(this.props.model.get("tbinv_cbwxydjhcbs"));
       }
-      return this.collection = collection;
+      this.collection = collection;
+      pageView.on("setError", function(error) {
+        debugger;
+        return that.setState({
+          error: error
+        });
+      });
+      pageView.on("saveError", function(error) {
+        return that.setState({
+          error: error
+        });
+      });
+      return pageView.on("saveSuccess", function() {
+        return that.props.closeHanele();
+      });
+    },
+    componentWillUnmount: function() {
+      pageView.off("setError");
+      pageView.off("saveError");
+      return pageView.off("saveSuccess");
     },
     componentWillReceiveProps: function(nextProps) {
-      return this.setState({
+      var collection;
+      this.setState({
         JHND: nextProps.model.get("JHND"),
         CBBH: nextProps.model.get("CBBH"),
         WXBM: nextProps.model.get("WXBM"),
         JHYF: nextProps.model.get("JHYF")
       });
+      if (this.state.action === "add") {
+        collection = new SubList();
+      } else {
+        collection = new SubList(nextProps.model.get("tbinv_cbwxydjhcbs"));
+      }
+      return this.collection = collection;
     },
-    save: function() {},
+    saveButtonHandle: function() {
+      var data;
+      data = _.pick(this.state, "JHND", "WXBM", "JHYF", "CBBH");
+      data.tbinv_cbwxydjhcbs = this.collection.toJSON();
+      return pageView.save(this.props.model, data);
+    },
     render: function() {
       var action, headerTexts, tableProps, that;
       that = this;
@@ -495,7 +598,9 @@
         "onHide": this.props.closeHanele
       }, React.createElement(Modal.Header, {
         "closeButton": true
-      }, React.createElement(Modal.Title, null, headerTexts[this.props.action])), React.createElement(Modal.Body, null, React.createElement(Grid, {
+      }, React.createElement(Modal.Title, null, headerTexts[this.props.action])), React.createElement(Modal.Body, {
+        "ref": "modalBody"
+      }, React.createElement(Grid, {
         "fluid": true
       }, React.createElement(Row, {
         "className": "show-grid"
@@ -507,9 +612,11 @@
         "md": 3.
       }, React.createElement(Input, {
         "type": "select",
+        "ref": "JHND",
         "addonBefore": "计划年度",
         "disabled": (action === "detail" || action === "edit"),
-        "valueLink": this.linkState("JHND")
+        "value": this.state.JHND,
+        "onChange": this.valueChangeHandle.bind(this, "JHND")
       }, React.createElement("option", {
         "value": "2015",
         "selected": ""
@@ -521,15 +628,30 @@
         "value": "2016"
       }, "2018"), React.createElement("option", {
         "value": "2016"
-      }, "2019"))), React.createElement(Col, {
+      }, "2019")), (function(_this) {
+        return function() {
+          if (_this.state.error.JHND != null) {
+            return React.createElement(Overlay, {
+              "show": true,
+              "target": (function() {
+                return ReactDOM.findDOMNode(_this.refs.JHND);
+              }),
+              "container": _this.refs.modalBody,
+              "placement": "bottom"
+            }, React.createElement(Popover, null, _this.state.error.JHND));
+          }
+        };
+      })(this)()), React.createElement(Col, {
         "xs": 12.,
         "sm": 6.,
         "md": 3.
       }, React.createElement(Input, {
         "type": "select",
+        "ref": "CBBH",
         "addonBefore": "船舶",
         "disabled": (action === "detail" || action === "edit"),
-        "valueLink": this.linkState("CBBH")
+        "value": this.state.CBBH,
+        "onChange": this.valueChangeHandle.bind(this, "CBBH")
       }, (function(_this) {
         return function() {
           var i, j, len, results;
@@ -542,28 +664,58 @@
           }
           return results;
         };
-      })(this)())), React.createElement(Col, {
+      })(this)()), (function(_this) {
+        return function() {
+          if (_this.state.error.CBBH != null) {
+            return React.createElement(Overlay, {
+              "show": true,
+              "target": (function() {
+                return ReactDOM.findDOMNode(_this.refs.CBBH);
+              }),
+              "container": _this.refs.modalBody,
+              "placement": "bottom"
+            }, React.createElement(Popover, null, _this.state.error.CBBH));
+          }
+        };
+      })(this)()), React.createElement(Col, {
         "xs": 12.,
         "sm": 6.,
         "md": 3.
       }, React.createElement(Input, {
         "type": "select",
+        "rel": "WXBM",
         "addonBefore": "部门",
         "disabled": (action === "detail" || action === "edit"),
-        "valueLink": this.linkState("WXBM")
+        "value": this.state.WXBM,
+        "onChange": this.valueChangeHandle.bind(this, "WXBM")
       }, React.createElement("option", {
         "value": "1"
       }, "\u7532\u677f\u90e8"), React.createElement("option", {
         "value": "2"
-      }, "\u8f6e\u673a\u90e8"))), React.createElement(Col, {
+      }, "\u8f6e\u673a\u90e8")), (function(_this) {
+        return function() {
+          if (_this.state.error.WXBM != null) {
+            return React.createElement(Overlay, {
+              "show": true,
+              "target": (function() {
+                return ReactDOM.findDOMNode(_this.refs.WXBM);
+              }),
+              "container": _this.refs.modalBody,
+              "placement": "bottom"
+            }, React.createElement(Popover, null, _this.state.error.WXBM));
+          }
+        };
+      })(this)()), React.createElement(Col, {
         "xs": 12.,
         "sm": 6.,
         "md": 3.
       }, React.createElement(Input, {
         "type": "select",
+        "ref": "JHYF",
         "addonBefore": "计划月份",
         "disabled": (action === "detail" || action === "edit"),
-        "valueLink": this.linkState("JHYF")
+        "value": this.state.JHYF,
+        "onChange": this.valueChangeHandle.bind(this, "JHYF")
       }, React.createElement("option", {
         "value": "1",
         "selected": true
@@ -589,7 +741,20 @@
         "value": "11"
       }, "11\u6708"), React.createElement("option", {
         "value": "12"
-      }, "12\u6708"))), React.createElement(Col, {
+      }, "12\u6708")), (function(_this) {
+        return function() {
+          if (_this.state.error.JHYF != null) {
+            return React.createElement(Overlay, {
+              "show": true,
+              "target": (function() {
+                return ReactDOM.findDOMNode(_this.refs.JHYF);
+              }),
+              "container": _this.refs.modalBody,
+              "placement": "bottom"
+            }, React.createElement(Popover, null, _this.state.error.JHYF));
+          }
+        };
+      })(this)()), React.createElement(Col, {
         "xs": 12.
       }, React.createElement(ReactTable, React.__spread({}, tableProps)))))), React.createElement(Modal.Footer, null, (function(_this) {
         return function() {
@@ -597,7 +762,7 @@
             return [
               React.createElement(Button, {
                 "bsStyle": "primary",
-                "onClick": _this.save
+                "onClick": _this.saveButtonHandle
               }, "\u4fdd\u5b58"), React.createElement(Button, {
                 "onClick": _this.props.closeHanele
               }, "\u53d6\u6d88")
@@ -653,6 +818,8 @@
 
   pageView = new PageControl({
     collection: mainList
-  }).render();
+  });
+
+  pageView.render();
 
 }).call(this);

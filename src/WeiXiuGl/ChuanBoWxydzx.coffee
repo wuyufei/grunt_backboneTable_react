@@ -1,5 +1,5 @@
 #_.extend  window, ReactBootstrap
-{Grid,Row,Col,Input,Button,Breadcrumb,BreadcrumbItem,Modal}=ReactBootstrap
+{Grid,Row,Col,Input,Button,Breadcrumb,BreadcrumbItem,Modal,Overlay,Popover}=ReactBootstrap
 
 
 #加载下拉框数据源
@@ -25,6 +25,19 @@ MainModel = Backbone.Model.extend
               WXBM:"1"
               JHND:"2015"
               JHYF:"1"
+            validation:
+              CBBH:
+                required:true
+                msg:"请选择船舶"
+              WXBM:
+                required:true
+                msg:"请选择部门"
+              JHND:
+                required:true
+                msg:"请选择计划年度"
+              JHYF:
+                required:true
+                msg:"请选择计划月份"
             schema:
                 DJHM:
                     type:"Text"
@@ -136,6 +149,24 @@ ItemModelList = Backbone.Collection.extend
 
 PageControl = Backbone.View.extend
   initialize:->
+    this.listenTo @collection,"add remove reset destroy",@render
+  save:(model,data)->
+    that = @
+    validated = true
+    isNew = model.isNew()
+    model.on "invalid",(model,error)->
+      validated = false
+      that.trigger("setError",error)
+    model.set data,validate:true
+    model.off("invalid")
+    if validated
+      model.save null,
+        success:->
+          that.trigger("saveSuccess")
+          that.collection.add(model) if isNew
+          # that.render()
+        error:(e)->
+          that.trigger("saveError")
   searchButtonClick:(data)->
     this.collection.fetch
       reset:true
@@ -151,6 +182,14 @@ Page = React.createClass
   getInitialState:->
     showModal: false
     action:""
+    JHND:"2015"
+    CBBH:"1"
+    WXBM:"1"
+
+  componentWillReceiveProps:()->
+    @setState
+      showModal:false
+      action:""
   closeHanele:->
     this.setState({ showModal: false })
   addButtonHandle:->
@@ -169,8 +208,8 @@ Page = React.createClass
   verifyButtonHandle:->
 
   searchHandle:->
-    {jhnd,cb,bm}=@state
-    obj = {jhnd,cb,bm}
+    debugger
+    obj = _.pick @state,"JHND","CBBH","WXBM"
     @props.searchButtonClick(obj)
   render:->
     that = @
@@ -223,7 +262,7 @@ Page = React.createClass
             </Breadcrumb>
           </Col>
           <Col xs={12} sm={6} md={2}>
-            <Input type="select" addonBefore="计划年度" valueLink={@linkState("jhnd")}>
+            <Input type="select" addonBefore="计划年度" valueLink={@linkState("JHND")}>
               <option value="2015">2015</option>
               <option value="2016">2016</option>
               <option value="2016">2017</option>
@@ -232,7 +271,7 @@ Page = React.createClass
             </Input>
           </Col>
           <Col xs={12} sm={6} md={2}>
-            <Input type="select" addonBefore="船舶" valueLink={@linkState("cb")}>
+            <Input type="select" addonBefore="船舶" valueLink={@linkState("CBBH")}>
               {
                 do =>
                   for i in cbSelectData
@@ -241,7 +280,7 @@ Page = React.createClass
             </Input>
           </Col>
           <Col xs={12} sm={6} md={2}>
-            <Input type="select" addonBefore="部门" valueLink={@linkState("bm")}>
+            <Input type="select" addonBefore="部门" valueLink={@linkState("WXBM")}>
               <option value="1">甲板部</option>
               <option value="2">轮机部</option>
             </Input>
@@ -276,12 +315,14 @@ DetailModal = React.createClass
     CBBH:@props.model.get("CBBH")
     WXBM:@props.model.get("WXBM")
     JHYF:@props.model.get("JHYF")
+    error:{}
   closeModal:->
     @setState showModal:false
   addButtonClick:->
     itemModelList = new ItemModelList()
-    {JHND,CBBH,WXBM,JHYF} = @state
-    data = {JHND,CBBH,WXBM,JHYF}
+    # {JHND,CBBH,WXBM,JHYF} = @state
+    # data = {JHND,CBBH,WXBM,JHYF}
+    data = _.pick @state,"JHND","CBBH","WXBM","JHYF"
     itemModelList.fetch
           url:"/WeiXiuGl/GetYearPlanData/"
           data:data
@@ -289,22 +330,64 @@ DetailModal = React.createClass
           reset:true
           async:false
     @setState showModal:true,itemModelList:itemModelList
+  valueChangeHandle:(key,e)->
+    debugger
+    newValue = {}
+    newValue[key] = e.target.value
+    @setState newValue,=>
+      val = _.pick @state,"JHND","CBBH","WXBM","JHYF"
+      if val.JHND isnt "" and val.CBBH isnt "" and val.WXBM isnt "" and val.JHYF isnt ""
+              @collection.fetch
+                  url:"/WeiXiuGl/GetNewMonthPlanData/"
+                  data:val
+                  type:"GET"
+                  reset:true
+                  async:false
+      else
+        @collection.reset()
+      @forceUpdate()
   addItem:(model)->
     debugger
     @setState showModal:false
   componentWillMount:->
+    that = @
     if @state.action is "add"
       collection = new SubList()
     else
       collection = new SubList @props.model.get("tbinv_cbwxydjhcbs")
     @collection = collection
+    pageView.on "setError",(error)->
+      debugger
+      that.setState
+        error:error
+
+    pageView.on "saveError",(error)->
+      that.setState
+        error:error
+
+    pageView.on "saveSuccess",->
+      that.props.closeHanele()
+
+  componentWillUnmount:->
+    pageView.off "setError"
+    pageView.off "saveError"
+    pageView.off "saveSuccess"
+
   componentWillReceiveProps:(nextProps)->
     @setState
       JHND:nextProps.model.get("JHND")
       CBBH:nextProps.model.get("CBBH")
       WXBM:nextProps.model.get("WXBM")
       JHYF:nextProps.model.get("JHYF")
-  save:->
+    if @state.action is "add"
+      collection = new SubList()
+    else
+      collection = new SubList nextProps.model.get("tbinv_cbwxydjhcbs")
+    @collection = collection
+  saveButtonHandle:->
+    data = _.pick(@state,"JHND","WXBM","JHYF","CBBH")
+    data.tbinv_cbwxydjhcbs = @collection.toJSON()
+    pageView.save(@props.model,data)
   render:->
     that = @
     action = @props.action
@@ -351,37 +434,55 @@ DetailModal = React.createClass
         <Modal.Header closeButton>
           <Modal.Title>{headerTexts[@props.action]}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          <Grid fluid=true>
+        <Modal.Body ref="modalBody">
+          <Grid fluid=true >
             <Row className="show-grid">
               <Col xs={12}>
               </Col>
               <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="计划年度" disabled={action in ["detail","edit"]} valueLink={@linkState("JHND")}>
-                  <option value="2015" selected="">2015</option>
-                  <option value="2016">2016</option>
-                  <option value="2016">2017</option>
-                  <option value="2016">2018</option>
-                  <option value="2016">2019</option>
-                </Input>
+                  <Input type="select"  ref="JHND" addonBefore="计划年度" disabled={action in ["detail","edit"]} value={@state.JHND} onChange={@valueChangeHandle.bind(this,"JHND")}>
+                    <option value="2015" selected="">2015</option>
+                    <option value="2016">2016</option>
+                    <option value="2016">2017</option>
+                    <option value="2016">2018</option>
+                    <option value="2016">2019</option>
+                  </Input>
+                  {do =>
+                    if @state.error.JHND?
+                      <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs.JHND)} container={@refs.modalBody} placement="bottom">
+                        <Popover>{@state.error.JHND}</Popover>
+                      </Overlay>
+                  }
               </Col>
               <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="船舶" disabled={action in ["detail","edit"]} valueLink={@linkState("CBBH")}>
+                <Input type="select" ref="CBBH" addonBefore="船舶" disabled={action in ["detail","edit"]}  value={@state.CBBH} onChange={@valueChangeHandle.bind(this,"CBBH")}>
                   {
                     do =>
                       for i in cbSelectData
                         <option value=i.dm>{i.mc}</option>
                   }
                 </Input>
+                {do =>
+                  if @state.error.CBBH?
+                    <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs.CBBH)} container={@refs.modalBody} placement="bottom" >
+                      <Popover>{@state.error.CBBH}</Popover>
+                    </Overlay>
+                }
               </Col>
               <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="部门" disabled={action in ["detail","edit"]} valueLink={@linkState("WXBM")}>
+                <Input type="select" rel="WXBM" addonBefore="部门" disabled={action in ["detail","edit"]}  value={@state.WXBM} onChange={@valueChangeHandle.bind(this,"WXBM")}>
                   <option value="1">甲板部</option>
                   <option value="2">轮机部</option>
                 </Input>
+                {do =>
+                  if @state.error.WXBM?
+                    <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs.WXBM)} container={@refs.modalBody} placement="bottom">
+                      <Popover>{@state.error.WXBM}</Popover>
+                    </Overlay>
+                }
               </Col>
               <Col xs={12} sm={6} md={3}>
-                <Input type="select" addonBefore="计划月份" disabled={action in ["detail","edit"]} valueLink={@linkState("JHYF")}>
+                <Input type="select" ref="JHYF" addonBefore="计划月份" disabled={action in ["detail","edit"]}  value={@state.JHYF} onChange={@valueChangeHandle.bind(this,"JHYF")}>
                   <option value="1" selected>1月</option>
                   <option value="2" >2月</option>
                   <option value="3" >3月</option>
@@ -395,6 +496,12 @@ DetailModal = React.createClass
                   <option value="11">11月</option>
                   <option value="12">12月</option>
                 </Input>
+                {do =>
+                  if @state.error.JHYF?
+                    <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs.JHYF)} container={@refs.modalBody} placement="bottom">
+                      <Popover>{@state.error.JHYF}</Popover>
+                    </Overlay>
+                }
               </Col>
               <Col xs={12}>
                 <ReactTable {...tableProps}/>
@@ -406,7 +513,7 @@ DetailModal = React.createClass
           {do =>
               if action isnt "detail"
                 [
-                  <Button bsStyle="primary" onClick={@save}>保存</Button>
+                  <Button bsStyle="primary" onClick={@saveButtonHandle}>保存</Button>
                   <Button  onClick={@props.closeHanele}>取消</Button>
                 ]
           }
@@ -454,4 +561,5 @@ AddItemModal = React.createClass
       </Modal.Body>
     </Modal>
 
-pageView = new PageControl({collection:mainList}).render()
+pageView = new PageControl({collection:mainList})
+pageView.render()
