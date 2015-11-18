@@ -52,7 +52,6 @@ CheckBoxCell = React.createClass
         <input type="checkbox" className="input-lg" style={style}  checkedLink={@linkState("value")} onBlue={@props.cellEndEdit} />
       </td>
     else
-      debugger
       if @state.value
         <td style={cellStyle} onClick={@props.cellClick}>
           <span className="glyphicon glyphicon-ok"  ></span>
@@ -91,7 +90,6 @@ DateTimeCell = React.createClass
     componentWillMount:->
       @setState value: @props.value
     closeButtonClick:(e)->
-      debugger
       that = @
       @setState value:"",->
         that.props.cellEndEdit()
@@ -138,7 +136,6 @@ DateTimeCell = React.createClass
 
         input.off "changeDate"
         input.one "changeDate",->
-          debugger
           that.setState value:input.val(),->
             that.props.cellEndEdit()
         unless this.props.required

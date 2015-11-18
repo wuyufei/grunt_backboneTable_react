@@ -200,7 +200,7 @@
 
   PageControl = Backbone.View.extend({
     initialize: function() {
-      return this.listenTo(this.collection, "add remove reset destroy", this.render);
+      return this.listenTo(this.collection, "add remove reset", this.render);
     },
     save: function(model, data) {
       var isNew, that, validated;
@@ -237,6 +237,7 @@
       });
       return this.render();
     },
+    getAddCollection: function(data) {},
     render: function() {
       return ReactDOM.render(React.createElement(Page, {
         "collection": this.collection,
@@ -478,22 +479,27 @@
       newValue[key] = e.target.value;
       return this.setState(newValue, (function(_this) {
         return function() {
-          var val;
-          val = _.pick(_this.state, "JHND", "CBBH", "WXBM", "JHYF");
-          if (val.JHND !== "" && val.CBBH !== "" && val.WXBM !== "" && val.JHYF !== "") {
-            _this.collection.fetch({
-              url: "/WeiXiuGl/GetNewMonthPlanData/",
-              data: val,
-              type: "GET",
-              reset: true,
-              async: false
-            });
-          } else {
-            _this.collection.reset();
-          }
+          _this.collection = _this.getNewCollection();
           return _this.forceUpdate();
         };
       })(this));
+    },
+    getNewCollection: function() {
+      var collection, val;
+      collection = new SubList();
+      val = _.pick(this.state, "JHND", "CBBH", "WXBM", "JHYF");
+      if (val.JHND !== "" && val.CBBH !== "" && val.WXBM !== "" && val.JHYF !== "") {
+        collection.fetch({
+          url: "/WeiXiuGl/GetNewMonthPlanData/",
+          data: val,
+          type: "GET",
+          reset: true,
+          async: false
+        });
+      } else {
+        collection.reset();
+      }
+      return collection;
     },
     addItem: function(model) {
       debugger;
@@ -502,14 +508,14 @@
       });
     },
     componentWillMount: function() {
-      var collection, that;
+      debugger;
+      var that;
       that = this;
-      if (this.state.action === "add") {
-        collection = new SubList();
+      if (this.props.action === "add") {
+        this.collection = this.getNewCollection();
       } else {
-        collection = new SubList(this.props.model.get("tbinv_cbwxydjhcbs"));
+        this.collection = new SubList(this.props.model.get("tbinv_cbwxydjhcbs"));
       }
-      this.collection = collection;
       pageView.on("setError", function(error) {
         debugger;
         return that.setState({
@@ -517,7 +523,7 @@
         });
       });
       pageView.on("saveError", function(error) {
-        return that.setState({
+        return that.setStatevv({
           error: error
         });
       });
@@ -531,19 +537,20 @@
       return pageView.off("saveSuccess");
     },
     componentWillReceiveProps: function(nextProps) {
-      var collection;
-      this.setState({
+      return this.setState({
         JHND: nextProps.model.get("JHND"),
         CBBH: nextProps.model.get("CBBH"),
         WXBM: nextProps.model.get("WXBM"),
         JHYF: nextProps.model.get("JHYF")
-      });
-      if (this.state.action === "add") {
-        collection = new SubList();
-      } else {
-        collection = new SubList(nextProps.model.get("tbinv_cbwxydjhcbs"));
-      }
-      return this.collection = collection;
+      }, (function(_this) {
+        return function() {
+          if (_this.props.action === "add") {
+            return _this.collection = _this.getNewCollection();
+          } else {
+            return _this.collection = new SubList(nextProps.model.get("tbinv_cbwxydjhcbs"));
+          }
+        };
+      })(this));
     },
     saveButtonHandle: function() {
       var data;

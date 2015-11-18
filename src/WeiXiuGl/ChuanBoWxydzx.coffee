@@ -149,7 +149,7 @@ ItemModelList = Backbone.Collection.extend
 
 PageControl = Backbone.View.extend
   initialize:->
-    this.listenTo @collection,"add remove reset destroy",@render
+    this.listenTo @collection,"add remove reset",@render
   save:(model,data)->
     that = @
     validated = true
@@ -173,6 +173,9 @@ PageControl = Backbone.View.extend
       data:data
       async:false
     @render()
+
+  getAddCollection:(data)->
+
   render:->
     ReactDOM.render <Page collection={@collection} searchButtonClick={@searchButtonClick.bind(@)}></Page>,$("#iframePageContainer")[0]
 
@@ -335,34 +338,38 @@ DetailModal = React.createClass
     newValue = {}
     newValue[key] = e.target.value
     @setState newValue,=>
-      val = _.pick @state,"JHND","CBBH","WXBM","JHYF"
-      if val.JHND isnt "" and val.CBBH isnt "" and val.WXBM isnt "" and val.JHYF isnt ""
-              @collection.fetch
-                  url:"/WeiXiuGl/GetNewMonthPlanData/"
-                  data:val
-                  type:"GET"
-                  reset:true
-                  async:false
-      else
-        @collection.reset()
+      @collection = @getNewCollection()
       @forceUpdate()
+  getNewCollection:->
+    collection = new SubList()
+    val = _.pick @state,"JHND","CBBH","WXBM","JHYF"
+    if val.JHND isnt "" and val.CBBH isnt "" and val.WXBM isnt "" and val.JHYF isnt ""
+      collection.fetch
+          url:"/WeiXiuGl/GetNewMonthPlanData/"
+          data:val
+          type:"GET"
+          reset:true
+          async:false
+    else
+      collection.reset()
+    collection
   addItem:(model)->
     debugger
     @setState showModal:false
   componentWillMount:->
+    debugger
     that = @
-    if @state.action is "add"
-      collection = new SubList()
+    if @props.action is "add"
+      @collection = @getNewCollection()
     else
-      collection = new SubList @props.model.get("tbinv_cbwxydjhcbs")
-    @collection = collection
+      @collection = new SubList @props.model.get("tbinv_cbwxydjhcbs")
     pageView.on "setError",(error)->
       debugger
       that.setState
         error:error
 
     pageView.on "saveError",(error)->
-      that.setState
+      that.setStatevv
         error:error
 
     pageView.on "saveSuccess",->
@@ -379,11 +386,11 @@ DetailModal = React.createClass
       CBBH:nextProps.model.get("CBBH")
       WXBM:nextProps.model.get("WXBM")
       JHYF:nextProps.model.get("JHYF")
-    if @state.action is "add"
-      collection = new SubList()
-    else
-      collection = new SubList nextProps.model.get("tbinv_cbwxydjhcbs")
-    @collection = collection
+    ,=>
+      if @props.action is "add"
+        @collection = @getNewCollection()
+      else
+        @collection = new SubList nextProps.model.get("tbinv_cbwxydjhcbs")
   saveButtonHandle:->
     data = _.pick(@state,"JHND","WXBM","JHYF","CBBH")
     data.tbinv_cbwxydjhcbs = @collection.toJSON()

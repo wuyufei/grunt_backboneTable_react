@@ -54,7 +54,6 @@
           for (i = 0, len = buttons.length; i < len; i++) {
             btn = buttons[i];
             btnProps = that.getButtonProps(btn);
-            debugger;
             results.push(React.createElement("button", {
               "className": btnProps.className,
               "style": {
@@ -131,7 +130,6 @@
             required: validation != null ? (ref1 = validation[k]) != null ? ref1.required : void 0 : void 0,
             schema: v
           };
-          debugger;
           Cell = CellClasses[v.type.toLowerCase()];
           results.push(React.createElement(Cell, React.__spread({
             "key": k

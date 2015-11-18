@@ -14,17 +14,14 @@ ActionMixin =
         @cellBeginEdit(model,key)
         e.preventDefault()
         e.stopPropagation()
-    debugger
     @setState
       selectedRow:model.cid
     @props.cellClick?(model,key)
 
   cellDoubleClick:(model,key)->
-    debugger
     @props.cellDoubleClick?(model,key)
 
   addButtonClick:(e)->
-    debugger
     buttonHandle = _.findWhere(@props.headerButtons,command:"add")?.onclick
     buttonHandle?(e)
     return if @cellEndEdit?() is false or e.isDefaultPrevented()
@@ -70,11 +67,7 @@ ActionMixin =
 Table = React.createClass
     mixins:[ActionMixin]
     getInitialState:->
-      selectedRow:do=>
-        if @props.collection.length>0
-          return @props.collection.at(0).cid
-        else
-          null
+      selectedRow:null
       sortField:@props.sortField
       sortDir:"asc"
       currentPage:0
@@ -121,7 +114,6 @@ Table = React.createClass
           editCell:null
           cellError:null
     sortCollection:->
-        debugger
         that = @
         sortModels = _.clone @props.collection.models
 
@@ -209,7 +201,6 @@ Table = React.createClass
       if btns?
         buttons =   for btn in btns
           props = {}
-          debugger
           if btn.command? and btn.command is "add"
               props.handleClick = @addButtonClick
               props.className =  "btn btn-primary btn-sm"
@@ -227,7 +218,6 @@ Table = React.createClass
 
     render:->
       that = @
-      debugger
       sortModels = @sortCollection()
       pageCollection = sortModels[@state.currentPage*10..(@state.currentPage+1)*10-1]
       rows = for model in pageCollection

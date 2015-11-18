@@ -22,19 +22,16 @@
           e.stopPropagation();
         }
       }
-      debugger;
       this.setState({
         selectedRow: model.cid
       });
       return typeof (base = this.props).cellClick === "function" ? base.cellClick(model, key) : void 0;
     },
     cellDoubleClick: function(model, key) {
-      debugger;
       var base;
       return typeof (base = this.props).cellDoubleClick === "function" ? base.cellDoubleClick(model, key) : void 0;
     },
     addButtonClick: function(e) {
-      debugger;
       var buttonHandle, model, ref;
       buttonHandle = (ref = _.findWhere(this.props.headerButtons, {
         command: "add"
@@ -132,15 +129,7 @@
     mixins: [ActionMixin],
     getInitialState: function() {
       return {
-        selectedRow: (function(_this) {
-          return function() {
-            if (_this.props.collection.length > 0) {
-              return _this.props.collection.at(0).cid;
-            } else {
-              return null;
-            }
-          };
-        })(this)(),
+        selectedRow: null,
         sortField: this.props.sortField,
         sortDir: "asc",
         currentPage: 0,
@@ -200,7 +189,6 @@
       });
     },
     sortCollection: function() {
-      debugger;
       var getSortValue, schema, sortModels, that;
       that = this;
       sortModels = _.clone(this.props.collection.models);
@@ -324,7 +312,6 @@
           for (i = 0, len = btns.length; i < len; i++) {
             btn = btns[i];
             props = {};
-            debugger;
             if ((btn.command != null) && btn.command === "add") {
               props.handleClick = this.addButtonClick;
               props.className = "btn btn-primary btn-sm";
@@ -352,7 +339,6 @@
     render: function() {
       var containerStyle, model, pageCollection, rowProps, rows, sortModels, that;
       that = this;
-      debugger;
       sortModels = this.sortCollection();
       pageCollection = sortModels.slice(this.state.currentPage * 10, +((this.state.currentPage + 1) * 10 - 1) + 1 || 9e9);
       rows = (function() {

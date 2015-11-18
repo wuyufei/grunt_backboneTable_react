@@ -94,7 +94,6 @@ table = new TableView
   readonly:false
   cellClick:(model,key)->
     debugger
-    #alert("单击")
   cellDoubleClick:(model,key)->
     debugger
     alert("双击")

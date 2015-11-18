@@ -88,7 +88,6 @@
           "onBlue": this.props.cellEndEdit
         }));
       } else {
-        debugger;
         if (this.state.value) {
           return React.createElement("td", {
             "style": cellStyle,
@@ -166,7 +165,6 @@
       });
     },
     closeButtonClick: function(e) {
-      debugger;
       var that;
       that = this;
       this.setState({
@@ -248,7 +246,6 @@
         }
         input.off("changeDate");
         input.one("changeDate", function() {
-          debugger;
           return that.setState({
             value: input.val()
           }, function() {

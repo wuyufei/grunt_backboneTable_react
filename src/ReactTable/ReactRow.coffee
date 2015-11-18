@@ -38,7 +38,6 @@ Row = React.createClass
 
       buttonsEl = for btn in buttons
         btnProps = that.getButtonProps(btn)
-        debugger
         <button className={btnProps.className} style={{marginRight:5}} onClick={btnProps.handleClick}>
           <span className={btnProps.icon}></span> {btn.text}
         </button>
@@ -77,7 +76,6 @@ Row = React.createClass
         cellEndEdit:@props.cellEndEdit
         required:validation?[k]?.required
         schema:v
-      debugger
       Cell = CellClasses[v.type.toLowerCase()]
       <Cell key={k} {...cellProps}/>
     <tr className={if @props.selected then "info" else ""}>{cells}{buttonCell}</tr>
