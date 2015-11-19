@@ -78,10 +78,10 @@ Table = React.createClass
     getDefaultProps:->
       enableSort:true
     componentWillMount:->
-      that = @
-      @sortedModels = @sortCollection()
-      @props.collection.on "add", ->
-        @forceUpdate()
+      # that = @
+      # @sortedModels = @sortCollection()
+      # @props.collection.on "add", ->
+      #   @forceUpdate()
     componentWillUpdate:(nextProps, nextState)->#不能在该方法中更新props和state
       #_.isEqual深度判等
       #if nextState.sortField isnt @state.sortField or nextState.sortDir isnt @state.sortDir

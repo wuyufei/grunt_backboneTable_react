@@ -143,14 +143,7 @@
         enableSort: true
       };
     },
-    componentWillMount: function() {
-      var that;
-      that = this;
-      this.sortedModels = this.sortCollection();
-      return this.props.collection.on("add", function() {
-        return this.forceUpdate();
-      });
-    },
+    componentWillMount: function() {},
     componentWillUpdate: function(nextProps, nextState) {},
     componentDidUpdate: function(prevProps, prevState) {
       var model;

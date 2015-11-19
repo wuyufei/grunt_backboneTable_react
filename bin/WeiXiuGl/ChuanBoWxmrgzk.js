@@ -1,7 +1,13 @@
 (function() {
-  var AddItemModal, Breadcrumb, BreadcrumbItem, Button, Col, Grid, Input, ItemModel, ItemModelList, List, MainModel, Modal, ModalForm, Overlay, Page, Popover, Row, SubList, SubModel, cbSelectData, getSelectData, mainList;
+  var Breadcrumb, BreadcrumbItem, Button, Col, Grid, Input, ItemModel, ItemModelList, List, MainModel, Modal, Overlay, Page, PageController, Popover, Row, SubList, SubModel, cbSelectData, currentMonth, currentYear, getSelectData, mainList, pageController, vesinfo;
 
   Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal, Overlay = ReactBootstrap.Overlay, Popover = ReactBootstrap.Popover;
+
+  vesinfo = "1";
+
+  currentMonth = "";
+
+  currentYear = "2015";
 
   getSelectData = function(code) {
     var array;
@@ -84,7 +90,7 @@
     model: MainModel
   });
 
-  SubModel = Backbone.RelationalModel.extend({
+  SubModel = Backbone.Model.extend({
     schema: {
       XH: {
         type: "Text",
@@ -184,58 +190,144 @@
     getInitialState: function() {
       return {
         showModal: false,
+        showAddItemModal: false,
         action: null,
-        model: null
+        model: null,
+        modalValue: {},
+        addItemModalValue: {},
+        addItemModalList: new ItemModelList
       };
     },
-    componentWillMount: function() {
-      return this.props.collection.on("reset", (function(_this) {
-        return function() {
-          return _this.forceUpdate();
-        };
-      })(this));
-    },
+    componentWillMount: function() {},
     componentWillReceiveProps: function(nextProps) {},
-    closeHanele: function() {
+    modalValueChange: function(key, e) {
+      var obj;
+      obj = _.pick(this.state, "modalValue").modalValue;
+      obj[key] = e.target.value;
+      return this.setState({
+        modalValue: obj
+      });
+    },
+    addItemModalValueChange: function(key, e) {
+      var obj, that;
+      that = this;
+      obj = _.pick(this.state, "addItemModalValue").addItemModalValue;
+      obj[key] = e.target.value;
+      return this.setState({
+        addItemModalValue: obj
+      }, function() {
+        var data;
+        data = _.pick(this.state, "addItemModalValue").addItemModalValue;
+        if (data.CBBH !== "" && data.WXBM !== "" && data.JHND !== "" && data.JHYF !== "") {
+          return that.setState({
+            addItemModalList: that.props.getAddItemList(data)
+          });
+        }
+      });
+    },
+    closeModal: function() {
       return this.setState({
         showModal: false,
         action: null
       });
     },
-    detailClick: function(model) {
-      model.fetch({
-        async: false
-      });
+    showAddItemModal: function() {
+      var obj;
+      obj = {
+        CBBH: this.state.model.get("CBBH"),
+        WXBM: this.state.model.get("WXBM"),
+        JHYF: "11",
+        JHND: "2015"
+      };
       return this.setState({
-        showModal: true,
-        action: "detial",
-        model: model
+        showAddItemModal: true,
+        addItemModalValue: obj,
+        addItemModalList: this.props.getAddItemList(obj)
       });
     },
+    closeAddItemModal: function() {
+      return this.setState({
+        showAddItemModal: false
+      });
+    },
+    addModalSelectButtonClick: function(model) {
+      var subModel;
+      if (this.subCollection.findWhere({
+        XH: model.get("XH")
+      })) {
+        alert("列表中已包含该项目，请选择其他项目");
+        return;
+      }
+      subModel = new SubModel({
+        XH: model.get("XH"),
+        MC: model.get("MC"),
+        WXBM: model.get("WXBM"),
+        FZR: model.get("FZR")
+      });
+      this.subCollection.add(subModel);
+      return this.setState({
+        showAddItemModal: false
+      });
+    },
+    saveClick: function() {
+      var data, error;
+      data = this.state.modalValue;
+      data.tbinv_vesworkcardcbs = this.collection.toJSON();
+      error = this.props.saveButtonHandle(this.state.model, data);
+      if (error === null) {
+        return this.setState({
+          showModal: false
+        });
+      } else {
+        return this.setState({
+          error: error
+        });
+      }
+    },
     addClick: function() {
-      var model;
-      model = new MainModel();
+      this.subCollection = new SubList();
       return this.setState({
         showModal: true,
         action: "add",
-        model: model
+        model: new MainModel({
+          CBBH: 1,
+          WXBM: 1
+        }),
+        modalValue: {
+          CBBH: "1",
+          WXBM: "1"
+        }
+      });
+    },
+    detailClick: function(model) {
+      this.subCollection = this.props.getSubModelList(model);
+      return this.setState({
+        showModal: true,
+        action: "detail",
+        model: model,
+        modalValue: {
+          CBBH: model.get("CBBH"),
+          WXBM: model.get("WXBM")
+        }
       });
     },
     editClick: function(model) {
-      model.fetch({
-        async: false
-      });
+      this.subCollection = this.props.getSubModelList(model);
       return this.setState({
         showModal: true,
         action: "edit",
-        model: model
+        model: model,
+        modalValue: {
+          CBBH: model.get("CBBH"),
+          WXBM: model.get("WXBM")
+        }
       });
     },
     verifyClick: function(model) {},
-    render: function() {
-      var modalProps, props, that;
+    getMainTableProps: function() {
+      var props, that;
       that = this;
-      props = {
+      return props = {
         collection: this.props.collection,
         readonly: true,
         headerButtons: [
@@ -272,68 +364,24 @@
           }
         ]
       };
-      modalProps = {
-        showModal: this.state.showModal,
-        action: this.state.action,
-        closeHanele: this.closeHanele,
-        model: this.state.model
-      };
-      return React.createElement("div", null, React.createElement(ReactTable, React.__spread({}, props)), (this.state.showModal ? (function(_this) {
-        return function() {
-          return React.createElement(ModalForm, React.__spread({}, modalProps));
-        };
-      })(this)() : void 0));
-    }
-  });
-
-  ModalForm = React.createClass({
-    getInitialState: function() {
-      return {
-        CBBH: this.props.model.get("CBBH"),
-        WXBM: this.props.model.get("WXBM"),
-        showModal: false
-      };
     },
-    componentWillReceiveProps: function(nextProps) {
-      return {
-        CBBH: nextProps.model.get("CBBH"),
-        WXBM: nextProps.model.get("WXBM")
-      };
-    },
-    valueChangeHandle: function(key, e) {
-      var newValue;
-      newValue = {};
-      newValue[key] = e.target.value;
-      return this.setState(newValue);
-    },
-    addButtonClick: function() {
-      return this.setState({
-        showModal: true
-      });
-    },
-    render: function() {
-      var action, headerTexts, tableProps;
-      headerTexts = {
-        detail: "月度维修保养计划详情",
-        edit: "月度维修保养计划编辑",
-        add: "新增月度维修保养计划"
-      };
-      action = this.props.action;
-      this.collection = new SubList(this.props.model.get("tbinv_vesworkcardcbs"));
-      tableProps = {
-        collection: this.collection,
+    getModalTableProps: function() {
+      var props, ref, that;
+      that = this;
+      props = {
+        collection: this.subCollection,
         readonly: true,
         sortField: "XH"
       };
-      if ((action === "edit" || action === "add")) {
-        _.extend(tableProps, {
+      if (((ref = this.state.action) === "edit" || ref === "add")) {
+        _.extend(props, {
           readonly: false,
           headerButtons: [
             {
               text: "从月度计划选择",
               command: "select",
               onclick: function(e) {
-                that.addButtonClick();
+                that.showAddItemModal();
                 return e.preventDefault();
               }
             }
@@ -343,7 +391,7 @@
               text: "删除",
               command: "delete",
               onclick: function(model, e) {
-                that.collection.remove(model);
+                that.subCollection.remove(model);
                 that.forceUpdate();
                 return e.preventDefault();
               }
@@ -351,13 +399,34 @@
           ]
         });
       }
-      return React.createElement("div", null, React.createElement(Modal, {
-        "bsSize": "large",
-        "show": this.props.showModal,
-        "onHide": this.props.closeHanele
+      return props;
+    },
+    render: function() {
+      var addItemModalTableProps, mainTableProps, modalTableProps, ref, ref1, that;
+      that = this;
+      mainTableProps = this.getMainTableProps();
+      modalTableProps = this.getModalTableProps();
+      addItemModalTableProps = {
+        collection: this.state.addItemModalList,
+        readonly: true,
+        sortField: "XH",
+        rowButtons: [
+          {
+            text: "选择",
+            command: "select",
+            onclick: function(model) {
+              return that.addModalSelectButtonClick(model);
+            }
+          }
+        ]
+      };
+      return React.createElement("div", null, React.createElement(ReactTable, React.__spread({}, mainTableProps)), React.createElement(Modal, {
+        "show": this.state.showModal,
+        "onHide": this.closeModal,
+        "dialogClassName": "large-modal"
       }, React.createElement(Modal.Header, {
         "closeButton": true
-      }, React.createElement(Modal.Title, null, headerTexts[action])), React.createElement(Modal.Body, {
+      }, React.createElement(Modal.Title, null, "\u8239\u8236\u7ef4\u4fee\u6bcf\u65e5\u5de5\u4f5c\u5361")), React.createElement(Modal.Body, {
         "ref": "modalBody"
       }, React.createElement(Grid, {
         "fluid": true
@@ -371,9 +440,9 @@
         "type": "select",
         "ref": "CBBH",
         "addonBefore": "船舶",
-        "disabled": (action === "detail" || action === "edit"),
-        "value": this.state.CBBH,
-        "onChange": this.valueChangeHandle.bind(this, "CBBH")
+        "disabled": ((ref = this.state.action) === "detail" || ref === "edit"),
+        "value": this.state.modalValue.CBBH,
+        "onChange": this.modalValueChange.bind(this, "CBBH")
       }, (function(_this) {
         return function() {
           var i, j, len, results;
@@ -394,65 +463,213 @@
         "type": "select",
         "rel": "WXBM",
         "addonBefore": "部门",
-        "disabled": (action === "detail" || action === "edit"),
-        "value": this.state.WXBM,
-        "onChange": this.valueChangeHandle.bind(this, "WXBM")
+        "disabled": ((ref1 = this.state.action) === "detail" || ref1 === "edit"),
+        "value": this.state.modalValue.WXBM,
+        "onChange": this.modalValueChange.bind(this, "WXBM")
       }, React.createElement("option", {
         "value": "1"
       }, "\u7532\u677f\u90e8"), React.createElement("option", {
         "value": "2"
       }, "\u8f6e\u673a\u90e8"))), React.createElement(Col, {
         "xs": 12.
-      }, React.createElement(ReactTable, React.__spread({}, tableProps)))))), React.createElement(Modal.Footer, null, (function(_this) {
+      }, React.createElement(ReactTable, React.__spread({}, modalTableProps)))))), React.createElement(Modal.Footer, null, (function(_this) {
         return function() {
-          if (action !== "detail") {
+          if (_this.state.action !== "detail") {
             return [
               React.createElement(Button, {
                 "bsStyle": "primary",
-                "onClick": _this.saveButtonHandle
+                "onClick": _this.saveClick
               }, "\u4fdd\u5b58"), React.createElement(Button, {
-                "onClick": _this.props.closeHanele
+                "bsStyle": "default",
+                "onClick": _this.closeModal
               }, "\u53d6\u6d88")
             ];
           }
         };
-      })(this)())), React.createElement(AddItemModal, null));
-    }
-  });
-
-  AddItemModal = React.createClass({
-    componentWillReceiveProps: function(nextProps) {},
-    render: function() {
-      debugger;
-      var tableProps, that;
-      that = this;
-      tableProps = {
-        collection: that.props.collection,
-        readonly: true,
-        sortField: "XH",
-        rowButtons: [
-          {
-            text: "选择",
-            command: "select",
-            onclick: function(model) {
-              debugger;
-              return that.props.selectItemHandle(model);
-            }
-          }
-        ]
-      };
-      return React.createElement(Modal, {
-        "show": this.props.show,
-        "onHide": this.props.closeHanele
+      })(this)())), React.createElement(Modal, {
+        "show": this.state.showAddItemModal,
+        "onHide": this.closeAddItemModal,
+        "bsSize": "large"
       }, React.createElement(Modal.Header, {
         "closeButton": true
-      }, React.createElement(Modal.Title, null, "\u8bf7\u9009\u62e9\u60a8\u8981\u6dfb\u52a0\u7684\u9879\u76ee")), React.createElement(Modal.Body, null, React.createElement(ReactTable, React.__spread({}, tableProps))));
+      }, React.createElement(Modal.Title, null, "\u8bf7\u9009\u62e9\u60a8\u8981\u6dfb\u52a0\u7684\u9879\u76ee")), React.createElement(Modal.Body, null, React.createElement(Grid, {
+        "fluid": true
+      }, React.createElement(Row, {
+        "className": "show-grid"
+      }, React.createElement(Col, {
+        "xs": 12.,
+        "sm": 6.,
+        "md": 3.
+      }, React.createElement(Input, {
+        "type": "select",
+        "ref": "JHND",
+        "addonBefore": "计划年度",
+        "value": this.state.addItemModalValue.JHND,
+        "onChange": this.addItemModalValueChange.bind(this, "JHND")
+      }, React.createElement("option", {
+        "value": "2015",
+        "selected": ""
+      }, "2015"), React.createElement("option", {
+        "value": "2016"
+      }, "2016"), React.createElement("option", {
+        "value": "2016"
+      }, "2017"), React.createElement("option", {
+        "value": "2016"
+      }, "2018"), React.createElement("option", {
+        "value": "2016"
+      }, "2019"))), React.createElement(Col, {
+        "xs": 12.,
+        "sm": 6.,
+        "md": 3.
+      }, React.createElement(Input, {
+        "type": "select",
+        "ref": "CBBH",
+        "addonBefore": "船舶",
+        "value": this.state.addItemModalValue.CBBH,
+        "onChange": this.addItemModalValueChange.bind(this, "CBBH")
+      }, (function(_this) {
+        return function() {
+          var i, j, len, results;
+          results = [];
+          for (j = 0, len = cbSelectData.length; j < len; j++) {
+            i = cbSelectData[j];
+            results.push(React.createElement("option", {
+              "value": i.dm
+            }, i.mc));
+          }
+          return results;
+        };
+      })(this)())), React.createElement(Col, {
+        "xs": 12.,
+        "sm": 6.,
+        "md": 3.
+      }, React.createElement(Input, {
+        "type": "select",
+        "rel": "WXBM",
+        "addonBefore": "部门",
+        "value": this.state.addItemModalValue.WXBM,
+        "onChange": this.addItemModalValueChange.bind(this, "WXBM")
+      }, React.createElement("option", {
+        "value": "1"
+      }, "\u7532\u677f\u90e8"), React.createElement("option", {
+        "value": "2"
+      }, "\u8f6e\u673a\u90e8"))), React.createElement(Col, {
+        "xs": 12.,
+        "sm": 6.,
+        "md": 3.
+      }, React.createElement(Input, {
+        "type": "select",
+        "ref": "JHYF",
+        "addonBefore": "计划月份",
+        "value": this.state.addItemModalValue.JHYF,
+        "onChange": this.addItemModalValueChange.bind(this, "JHYF")
+      }, React.createElement("option", {
+        "value": "1",
+        "selected": true
+      }, "1\u6708"), React.createElement("option", {
+        "value": "2"
+      }, "2\u6708"), React.createElement("option", {
+        "value": "3"
+      }, "3\u6708"), React.createElement("option", {
+        "value": "4"
+      }, "4\u6708"), React.createElement("option", {
+        "value": "5"
+      }, "5\u6708"), React.createElement("option", {
+        "value": "6"
+      }, "6\u6708"), React.createElement("option", {
+        "value": "7"
+      }, "7\u6708"), React.createElement("option", {
+        "value": "8"
+      }, "8\u6708"), React.createElement("option", {
+        "value": "9"
+      }, "9\u6708"), React.createElement("option", {
+        "value": "10"
+      }, "10\u6708"), React.createElement("option", {
+        "value": "11"
+      }, "11\u6708"), React.createElement("option", {
+        "value": "12"
+      }, "12\u6708"))), React.createElement(Col, {
+        "xs": 12.
+      }, React.createElement(ReactTable, React.__spread({}, addItemModalTableProps))))))));
     }
   });
 
-  ReactDOM.render(React.createElement(Page, {
-    "collection": mainList
-  }), $("#backboneTable")[0]);
+  PageController = Backbone.View.extend({
+    initialize: function(options) {
+      return $("#btnSearch").click(this.search.bind(this));
+    },
+    search: function() {
+      var that;
+      that = this;
+      return mainList.fetch({
+        reset: true,
+        success: function() {
+          return that.render();
+        }
+      });
+    },
+    getSubModelList: function(model) {
+      model.fetch({
+        async: false
+      });
+      return new SubList(model.get("tbinv_vesworkcardcbs"));
+    },
+    save: function(model, data) {
+      var error, isNew, validated;
+      validated = true;
+      error = null;
+      isNew = model.isNew();
+      model.on("invalid", function(model, error) {
+        validated = false;
+        return error = error;
+      });
+      model.set(data, {
+        validate: true
+      });
+      model.off("invalid");
+      if (validated) {
+        error = model.save(null, {
+          async: false,
+          wait: true
+        });
+        if (!error) {
+          if (isNew) {
+            mainList.add(model);
+          }
+          return {};
+        } else {
+          return error;
+        }
+      } else {
+        return error;
+      }
+    },
+    getAddItemList: function(data) {
+      var itemModelList;
+      itemModelList = new ItemModelList;
+      itemModelList.fetch({
+        url: "/WeiXiuGl/GetMonthPlanData",
+        data: data,
+        async: false,
+        reset: true
+      });
+      return itemModelList;
+    },
+    render: function() {
+      return ReactDOM.render(React.createElement(Page, {
+        "collection": mainList,
+        "getSubModelList": this.getSubModelList,
+        "getAddItemList": this.getAddItemList,
+        "saveButtonHandle": this.save
+      }), this.el);
+    }
+  });
+
+  pageController = new PageController({
+    el: $("#backboneTable")[0]
+  });
+
+  pageController.render();
 
   console.log("");
 
