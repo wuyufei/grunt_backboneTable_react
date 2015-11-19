@@ -127,11 +127,6 @@ ItemModelList = Backbone.Collection.extend
 
 mainList = new List()
 
-#查询
-$("#btnSearch").click ->
-        mainList.fetch
-            reset:true
-
 
 
 Page = React.createClass
@@ -143,27 +138,29 @@ Page = React.createClass
     modalValue:{}
     addItemModalValue:{}
     addItemModalList:new ItemModelList
-  componentWillMount:->
-    # @props.collection.on "reset",=>
-    #   @forceUpdate()
-  componentWillReceiveProps:(nextProps)->
+    error:{}
+
   modalValueChange:(key,e)->
-    obj = _.pick(@state,"modalValue").modalValue
+    obj = _.extend {},@state.modalValue
     obj[key] = e.target.value
     @setState modalValue:obj
   addItemModalValueChange:(key,e)->
     that = @
-    obj = _.pick(@state,"addItemModalValue").addItemModalValue
+    obj = _.extend {},@state.addItemModalValue
     obj[key] = e.target.value
     @setState addItemModalValue:obj,->
-      data = _.pick(@state,"addItemModalValue").addItemModalValue
+      data = @state.addItemModalValue
       if data.CBBH isnt "" and data.WXBM isnt "" and data.JHND isnt "" and data.JHYF isnt ""
         that.setState
           addItemModalList:that.props.getAddItemList(data)
+
+
   closeModal:->
     @setState
       showModal:false
       action:null
+  closeAddItemModal:->
+    @setState showAddItemModal:false
   showAddItemModal:->
     obj =
       CBBH:@state.model.get("CBBH")
@@ -175,8 +172,7 @@ Page = React.createClass
       addItemModalValue:obj
       addItemModalList:@props.getAddItemList(obj)
 
-  closeAddItemModal:->
-    @setState showAddItemModal:false
+
   addModalSelectButtonClick:(model)->
     if @subCollection.findWhere({XH:model.get("XH")})
       alert("列表中已包含该项目，请选择其他项目")
@@ -189,14 +185,7 @@ Page = React.createClass
     @subCollection.add(subModel)
     @setState
       showAddItemModal:false
-  saveClick:->
-    data = @state.modalValue
-    data.tbinv_vesworkcardcbs = @collection.toJSON()
-    error = @props.saveButtonHandle(@state.model,data)
-    if error is null
-      @setState showModal:false
-    else
-      @setState error:error
+
   addClick:()->
     @subCollection = new SubList()
     @setState
@@ -224,7 +213,19 @@ Page = React.createClass
       modalValue:
         CBBH:model.get("CBBH")
         WXBM:model.get("WXBM")
+  saveClick:->
+    data = @state.modalValue
+    data.tbinv_vesworkcardcbs = @collection.toJSON()
+    error = @props.saveButtonHandle(@state.model,data)
+    if error is null
+      @setState
+        showModal:false
+        error:{}
+    else
+      @setState error:error
   verifyClick:(model)->
+
+
   getMainTableProps:->
     that = @
     props =
@@ -292,11 +293,7 @@ Page = React.createClass
           }
         ]
     props
-
-  render:->
-    that = @
-    mainTableProps = @getMainTableProps()
-    modalTableProps = @getModalTableProps()
+  getAddItemModalTableProps:->
     addItemModalTableProps =
         collection:@state.addItemModalList
         readonly:true
@@ -309,8 +306,10 @@ Page = React.createClass
               that.addModalSelectButtonClick(model)
           }
         ]
+
+  render:->
     <div>
-      <ReactTable {...mainTableProps}/>
+      <ReactTable {...@getMainTableProps()}/>
       <Modal  show={@state.showModal}  onHide={@closeModal} dialogClassName="large-modal">
         <Modal.Header closeButton>
           <Modal.Title>船舶维修每日工作卡</Modal.Title>
@@ -326,15 +325,27 @@ Page = React.createClass
                         <option value=i.dm>{i.mc}</option>
                   }
                 </Input>
+                {do =>
+                  if @state.error.CBBH?
+                    <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs.CBBH)} container={@refs.modalBody} placement="bottom">
+                      <Popover>{@state.error.CBBH}</Popover>
+                    </Overlay>
+                }
               </Col>
               <Col xs={12} sm={6} md={3}>
                 <Input type="select" rel="WXBM" addonBefore="部门" disabled={@state.action in ["detail","edit"]} value={@state.modalValue.WXBM} onChange={@modalValueChange.bind(@,"WXBM")}>
                   <option value="1">甲板部</option>
                   <option value="2">轮机部</option>
                 </Input>
+                {do =>
+                  if @state.error.WXBM?
+                    <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs.WXBM)} container={@refs.modalBody} placement="bottom">
+                      <Popover>{@state.error.WXBM}</Popover>
+                    </Overlay>
+                }
               </Col>
               <Col xs={12}>
-                <ReactTable {...modalTableProps}/>
+                <ReactTable {...@getModalTableProps()}/>
               </Col>
             </Row>
           </Grid>
@@ -397,7 +408,7 @@ Page = React.createClass
                 </Input>
               </Col>
               <Col xs={12}>
-               <ReactTable {...addItemModalTableProps}/>
+               <ReactTable {...@getAddItemModalTableProps()}/>
               </Col>
             </Row>
           </Grid>
