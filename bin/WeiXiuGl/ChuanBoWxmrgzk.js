@@ -182,12 +182,6 @@
 
   mainList = new List();
 
-  $("#btnSearch").click(function() {
-    return mainList.fetch({
-      reset: true
-    });
-  });
-
   Page = React.createClass({
     getInitialState: function() {
       return {
@@ -197,14 +191,13 @@
         model: null,
         modalValue: {},
         addItemModalValue: {},
-        addItemModalList: new ItemModelList
+        addItemModalList: new ItemModelList,
+        error: {}
       };
     },
-    componentWillMount: function() {},
-    componentWillReceiveProps: function(nextProps) {},
     modalValueChange: function(key, e) {
       var obj;
-      obj = _.pick(this.state, "modalValue").modalValue;
+      obj = _.extend({}, this.state.modalValue);
       obj[key] = e.target.value;
       return this.setState({
         modalValue: obj
@@ -213,13 +206,13 @@
     addItemModalValueChange: function(key, e) {
       var obj, that;
       that = this;
-      obj = _.pick(this.state, "addItemModalValue").addItemModalValue;
+      obj = _.extend({}, this.state.addItemModalValue);
       obj[key] = e.target.value;
       return this.setState({
         addItemModalValue: obj
       }, function() {
         var data;
-        data = _.pick(this.state, "addItemModalValue").addItemModalValue;
+        data = this.state.addItemModalValue;
         if (data.CBBH !== "" && data.WXBM !== "" && data.JHND !== "" && data.JHYF !== "") {
           return that.setState({
             addItemModalList: that.props.getAddItemList(data)
@@ -231,6 +224,11 @@
       return this.setState({
         showModal: false,
         action: null
+      });
+    },
+    closeAddItemModal: function() {
+      return this.setState({
+        showAddItemModal: false
       });
     },
     showAddItemModal: function() {
@@ -245,11 +243,6 @@
         showAddItemModal: true,
         addItemModalValue: obj,
         addItemModalList: this.props.getAddItemList(obj)
-      });
-    },
-    closeAddItemModal: function() {
-      return this.setState({
-        showAddItemModal: false
       });
     },
     addModalSelectButtonClick: function(model) {
@@ -271,6 +264,7 @@
         showAddItemModal: false
       });
     },
+<<<<<<< HEAD
     saveClick: function() {
       var data, error;
       data = this.state.modalValue;
@@ -286,6 +280,8 @@
         });
       }
     },
+=======
+>>>>>>> origin/master
     addClick: function() {
       this.subCollection = new SubList();
       return this.setState({
@@ -324,6 +320,22 @@
           WXBM: model.get("WXBM")
         }
       });
+    },
+    saveClick: function() {
+      var data, error;
+      data = this.state.modalValue;
+      data.tbinv_vesworkcardcbs = this.collection.toJSON();
+      error = this.props.saveButtonHandle(this.state.model, data);
+      if (error === null) {
+        return this.setState({
+          showModal: false,
+          error: {}
+        });
+      } else {
+        return this.setState({
+          error: error
+        });
+      }
     },
     verifyClick: function(model) {},
     getMainTableProps: function() {
@@ -403,12 +415,9 @@
       }
       return props;
     },
-    render: function() {
-      var addItemModalTableProps, mainTableProps, modalTableProps, ref, ref1, that;
-      that = this;
-      mainTableProps = this.getMainTableProps();
-      modalTableProps = this.getModalTableProps();
-      addItemModalTableProps = {
+    getAddItemModalTableProps: function() {
+      var addItemModalTableProps;
+      return addItemModalTableProps = {
         collection: this.state.addItemModalList,
         readonly: true,
         sortField: "XH",
@@ -422,7 +431,10 @@
           }
         ]
       };
-      return React.createElement("div", null, React.createElement(ReactTable, React.__spread({}, mainTableProps)), React.createElement(Modal, {
+    },
+    render: function() {
+      var ref, ref1;
+      return React.createElement("div", null, React.createElement(ReactTable, React.__spread({}, this.getMainTableProps())), React.createElement(Modal, {
         "show": this.state.showModal,
         "onHide": this.closeModal,
         "dialogClassName": "large-modal"
@@ -457,7 +469,20 @@
           }
           return results;
         };
-      })(this)())), React.createElement(Col, {
+      })(this)()), (function(_this) {
+        return function() {
+          if (_this.state.error.CBBH != null) {
+            return React.createElement(Overlay, {
+              "show": true,
+              "target": (function() {
+                return ReactDOM.findDOMNode(_this.refs.CBBH);
+              }),
+              "container": _this.refs.modalBody,
+              "placement": "bottom"
+            }, React.createElement(Popover, null, _this.state.error.CBBH));
+          }
+        };
+      })(this)()), React.createElement(Col, {
         "xs": 12.,
         "sm": 6.,
         "md": 3.
@@ -472,9 +497,22 @@
         "value": "1"
       }, "\u7532\u677f\u90e8"), React.createElement("option", {
         "value": "2"
-      }, "\u8f6e\u673a\u90e8"))), React.createElement(Col, {
+      }, "\u8f6e\u673a\u90e8")), (function(_this) {
+        return function() {
+          if (_this.state.error.WXBM != null) {
+            return React.createElement(Overlay, {
+              "show": true,
+              "target": (function() {
+                return ReactDOM.findDOMNode(_this.refs.WXBM);
+              }),
+              "container": _this.refs.modalBody,
+              "placement": "bottom"
+            }, React.createElement(Popover, null, _this.state.error.WXBM));
+          }
+        };
+      })(this)()), React.createElement(Col, {
         "xs": 12.
-      }, React.createElement(ReactTable, React.__spread({}, modalTableProps)))))), React.createElement(Modal.Footer, null, (function(_this) {
+      }, React.createElement(ReactTable, React.__spread({}, this.getModalTableProps())))))), React.createElement(Modal.Footer, null, (function(_this) {
         return function() {
           if (_this.state.action !== "detail") {
             return [
@@ -592,7 +630,7 @@
         "value": "12"
       }, "12\u6708"))), React.createElement(Col, {
         "xs": 12.
-      }, React.createElement(ReactTable, React.__spread({}, addItemModalTableProps))))))));
+      }, React.createElement(ReactTable, React.__spread({}, this.getAddItemModalTableProps()))))))));
     }
   });
 
