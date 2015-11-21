@@ -63,9 +63,10 @@ MainModel = Backbone.Model.extend
                 JHYF:
                     type:"Text"
                     title:"计划月份"
-                ZDRQ:
+                JDRQ:
                     type:"Text"
                     title:"制单日期"
+                    format:"yyyy-mm-dd"
                 ZDR:
                     type:"Text"
                     title:"制单人"
@@ -99,9 +100,10 @@ SubModel = Backbone.Model.extend
             type:"Text"
             title:"项目名称"
             readonly:true
-        JHWCSJ:
+        WCRQ:
             type:"DateTime"
             title:"计划完成日期"
+            format:"yyyy-mm-dd"
             readonly:false
         FZR:
             type:"Text"
@@ -165,8 +167,9 @@ PageControl = Backbone.View.extend
           that.trigger("saveSuccess")
           that.collection.add(model) if isNew
           # that.render()
-        error:(e)->
-          that.trigger("saveError")
+        error:(e,x,c)->
+          debugger
+          that.trigger("saveError",serverError:x.responseJSON.ExceptionMessage)
   searchButtonClick:(data)->
     this.collection.fetch
       reset:true
@@ -208,7 +211,17 @@ Page = React.createClass
       wait:true
       async:false
     @setState showModal:true,action:"edit",model:model
-  verifyButtonHandle:->
+  verifyButtonHandle:(model)->
+    that = @
+    $.ajax
+        url : "/api/tbinv_cbwxydjhzb"
+        type:"GET"
+        data:{id:model.get("DJHM")}
+        headers:method:"verify"
+        success:->
+            model.set("DJZT","1")
+            that.forceUpdate()
+            alert(" 审核成功")
 
   searchHandle:->
     debugger
@@ -250,6 +263,8 @@ Page = React.createClass
             {
               text:"审核"
               command:"verify"
+              onclick:(model,e)->
+                that.verifyButtonHandle(model)
             }
 
           ]
@@ -354,8 +369,18 @@ DetailModal = React.createClass
       collection.reset()
     collection
   addItem:(model)->
-    debugger
+    if @collection.findWhere {XH:model.get("XH")}
+      alert("列表中已包含该项目，请选择其他项目")
+      return
+    subModel = new SubModel
+      XH:model.get("XH")
+      MC:model.get("MC")
+      FZR:model.get("FZR")
+      WHZQ:model.get("WHZQ")
+    @collection.add(subModel)
     @setState showModal:false
+
+
   componentWillMount:->
     debugger
     that = @
@@ -369,7 +394,7 @@ DetailModal = React.createClass
         error:error
 
     pageView.on "saveError",(error)->
-      that.setStatevv
+      that.setState
         error:error
 
     pageView.on "saveSuccess",->
@@ -386,14 +411,19 @@ DetailModal = React.createClass
       CBBH:nextProps.model.get("CBBH")
       WXBM:nextProps.model.get("WXBM")
       JHYF:nextProps.model.get("JHYF")
-    ,=>
-      if @props.action is "add"
-        @collection = @getNewCollection()
-      else
-        @collection = new SubList nextProps.model.get("tbinv_cbwxydjhcbs")
+
+    if nextProps.action is "add"
+      @collection = @getNewCollection()
+    else
+      @collection = new SubList nextProps.model.get("tbinv_cbwxydjhcbs")
   saveButtonHandle:->
     data = _.pick(@state,"JHND","WXBM","JHYF","CBBH")
     data.tbinv_cbwxydjhcbs = @collection.toJSON()
+    timeInputFlag = true
+    timeInputFlag = false for item in data.tbinv_cbwxydjhcbs when item.WCRQ is "" or item.WCRQ is null or item.WCRQ is undefined
+    if timeInputFlag is false
+      alert("列表中有计划完成时间未输入，请输入计划完成时间")
+      return
     pageView.save(@props.model,data)
   render:->
     that = @
@@ -435,7 +465,6 @@ DetailModal = React.createClass
           }
         ]
 
-    debugger
     <div>
       <Modal bsSize="large" show={@props.show}  onHide={@props.closeHanele}>
         <Modal.Header closeButton>
@@ -520,9 +549,15 @@ DetailModal = React.createClass
           {do =>
               if action isnt "detail"
                 [
-                  <Button bsStyle="primary" onClick={@saveButtonHandle}>保存</Button>
+                  <Button ref="saveBtn" bsStyle="primary" onClick={@saveButtonHandle}>保存</Button>
                   <Button  onClick={@props.closeHanele}>取消</Button>
                 ]
+          }
+          {do =>
+            if @state.error.serverError?
+              <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs.saveBtn)} container={@refs.modalBody} placement="top">
+                <Popover>{@state.error.serverError}</Popover>
+              </Overlay>
           }
         </Modal.Footer>
       </Modal>

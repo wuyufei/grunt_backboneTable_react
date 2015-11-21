@@ -157,7 +157,13 @@
     readonly: true,
     cellClick: function(model, key) {},
     cellDoubleClick: function(model, key) {},
-    buttons: [
+    headerButtons: [
+      {
+        text: "新增",
+        command: "add"
+      }
+    ],
+    rowButtons: [
       {
         text: "详情",
         command: "detail"

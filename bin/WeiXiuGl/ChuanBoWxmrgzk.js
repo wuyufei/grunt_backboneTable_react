@@ -63,7 +63,8 @@
       },
       ZDRQ: {
         type: "Text",
-        title: "填报日期"
+        title: "填报日期",
+        format: "yyyy-mm-dd"
       },
       ZDR: {
         type: "Text",
@@ -104,7 +105,8 @@
       },
       WCRQ: {
         type: "DateTime",
-        title: "完成日期"
+        title: "完成日期",
+        format: "yyyy-mm-dd"
       },
       BZ: {
         type: "Text",
@@ -272,9 +274,9 @@
     saveClick: function() {
       var data, error;
       data = this.state.modalValue;
-      data.tbinv_vesworkcardcbs = this.collection.toJSON();
+      data.tbinv_vesworkcardcbs = this.subCollection.toJSON();
       error = this.props.saveButtonHandle(this.state.model, data);
-      if (error === null) {
+      if (_.isEmpty(error)) {
         return this.setState({
           showModal: false
         });
@@ -615,7 +617,7 @@
       return new SubList(model.get("tbinv_vesworkcardcbs"));
     },
     save: function(model, data) {
-      var error, isNew, validated;
+      var error, isNew, validated, xhr;
       validated = true;
       error = null;
       isNew = model.isNew();
@@ -628,11 +630,11 @@
       });
       model.off("invalid");
       if (validated) {
-        error = model.save(null, {
+        xhr = model.save(null, {
           async: false,
           wait: true
         });
-        if (!error) {
+        if (xhr.status === 200) {
           if (isNew) {
             mainList.add(model);
           }

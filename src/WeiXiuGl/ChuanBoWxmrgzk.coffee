@@ -47,6 +47,7 @@ MainModel = Backbone.Model.extend
                 ZDRQ:
                     type:"Text"
                     title:"填报日期"
+                    format:"yyyy-mm-dd"
                 ZDR:
                     type:"Text"
                     title:"制单人"
@@ -75,6 +76,7 @@ SubModel = Backbone.Model.extend
             WCRQ:
                 type:"DateTime"
                 title:"完成日期"
+                format:"yyyy-mm-dd"
             BZ:
                 type:"Text"
                 title:"每日事件记录"
@@ -191,9 +193,9 @@ Page = React.createClass
       showAddItemModal:false
   saveClick:->
     data = @state.modalValue
-    data.tbinv_vesworkcardcbs = @collection.toJSON()
+    data.tbinv_vesworkcardcbs = @subCollection.toJSON()
     error = @props.saveButtonHandle(@state.model,data)
-    if error is null
+    if _.isEmpty(error)
       @setState showModal:false
     else
       @setState error:error
@@ -430,8 +432,8 @@ PageController = Backbone.View.extend
     model.set data,validate:true
     model.off("invalid")
     if validated
-      error = model.save(null,{async:false,wait:true})
-      unless error
+      xhr = model.save(null,{async:false,wait:true})
+      if xhr.status is 200
         mainList.add(model) if isNew
         return {}
       else

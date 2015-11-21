@@ -87,9 +87,10 @@
         type: "Text",
         title: "计划月份"
       },
-      ZDRQ: {
+      JDRQ: {
         type: "Text",
-        title: "制单日期"
+        title: "制单日期",
+        format: "yyyy-mm-dd"
       },
       ZDR: {
         type: "Text",
@@ -137,9 +138,10 @@
         title: "项目名称",
         readonly: true
       },
-      JHWCSJ: {
+      WCRQ: {
         type: "DateTime",
         title: "计划完成日期",
+        format: "yyyy-mm-dd",
         readonly: false
       },
       FZR: {
@@ -223,8 +225,11 @@
               return that.collection.add(model);
             }
           },
-          error: function(e) {
-            return that.trigger("saveError");
+          error: function(e, x, c) {
+            debugger;
+            return that.trigger("saveError", {
+              serverError: x.responseJSON.ExceptionMessage
+            });
           }
         });
       }
@@ -299,7 +304,25 @@
         model: model
       });
     },
-    verifyButtonHandle: function() {},
+    verifyButtonHandle: function(model) {
+      var that;
+      that = this;
+      return $.ajax({
+        url: "/api/tbinv_cbwxydjhzb",
+        type: "GET",
+        data: {
+          id: model.get("DJHM")
+        },
+        headers: {
+          method: "verify"
+        },
+        success: function() {
+          model.set("DJZT", "1");
+          that.forceUpdate();
+          return alert(" 审核成功");
+        }
+      });
+    },
     searchHandle: function() {
       debugger;
       var obj;
@@ -342,7 +365,10 @@
             command: "delete"
           }, {
             text: "审核",
-            command: "verify"
+            command: "verify",
+            onclick: function(model, e) {
+              return that.verifyButtonHandle(model);
+            }
           }
         ]
       };
@@ -502,7 +528,20 @@
       return collection;
     },
     addItem: function(model) {
-      debugger;
+      var subModel;
+      if (this.collection.findWhere({
+        XH: model.get("XH")
+      })) {
+        alert("列表中已包含该项目，请选择其他项目");
+        return;
+      }
+      subModel = new SubModel({
+        XH: model.get("XH"),
+        MC: model.get("MC"),
+        FZR: model.get("FZR"),
+        WHZQ: model.get("WHZQ")
+      });
+      this.collection.add(subModel);
       return this.setState({
         showModal: false
       });
@@ -523,7 +562,7 @@
         });
       });
       pageView.on("saveError", function(error) {
-        return that.setStatevv({
+        return that.setState({
           error: error
         });
       });
@@ -537,25 +576,34 @@
       return pageView.off("saveSuccess");
     },
     componentWillReceiveProps: function(nextProps) {
-      return this.setState({
+      this.setState({
         JHND: nextProps.model.get("JHND"),
         CBBH: nextProps.model.get("CBBH"),
         WXBM: nextProps.model.get("WXBM"),
         JHYF: nextProps.model.get("JHYF")
-      }, (function(_this) {
-        return function() {
-          if (_this.props.action === "add") {
-            return _this.collection = _this.getNewCollection();
-          } else {
-            return _this.collection = new SubList(nextProps.model.get("tbinv_cbwxydjhcbs"));
-          }
-        };
-      })(this));
+      });
+      if (nextProps.action === "add") {
+        return this.collection = this.getNewCollection();
+      } else {
+        return this.collection = new SubList(nextProps.model.get("tbinv_cbwxydjhcbs"));
+      }
     },
     saveButtonHandle: function() {
-      var data;
+      var data, item, j, len, ref, timeInputFlag;
       data = _.pick(this.state, "JHND", "WXBM", "JHYF", "CBBH");
       data.tbinv_cbwxydjhcbs = this.collection.toJSON();
+      timeInputFlag = true;
+      ref = data.tbinv_cbwxydjhcbs;
+      for (j = 0, len = ref.length; j < len; j++) {
+        item = ref[j];
+        if (item.WCRQ === "" || item.WCRQ === null || item.WCRQ === void 0) {
+          timeInputFlag = false;
+        }
+      }
+      if (timeInputFlag === false) {
+        alert("列表中有计划完成时间未输入，请输入计划完成时间");
+        return;
+      }
       return pageView.save(this.props.model, data);
     },
     render: function() {
@@ -598,7 +646,6 @@
           ]
         });
       }
-      debugger;
       return React.createElement("div", null, React.createElement(Modal, {
         "bsSize": "large",
         "show": this.props.show,
@@ -768,12 +815,26 @@
           if (action !== "detail") {
             return [
               React.createElement(Button, {
+                "ref": "saveBtn",
                 "bsStyle": "primary",
                 "onClick": _this.saveButtonHandle
               }, "\u4fdd\u5b58"), React.createElement(Button, {
                 "onClick": _this.props.closeHanele
               }, "\u53d6\u6d88")
             ];
+          }
+        };
+      })(this)(), (function(_this) {
+        return function() {
+          if (_this.state.error.serverError != null) {
+            return React.createElement(Overlay, {
+              "show": true,
+              "target": (function() {
+                return ReactDOM.findDOMNode(_this.refs.saveBtn);
+              }),
+              "container": _this.refs.modalBody,
+              "placement": "top"
+            }, React.createElement(Popover, null, _this.state.error.serverError));
           }
         };
       })(this)())), (function(_this) {
