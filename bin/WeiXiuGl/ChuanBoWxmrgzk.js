@@ -264,6 +264,7 @@
         showAddItemModal: false
       });
     },
+<<<<<<< HEAD
     saveClick: function() {
       var data, error;
       data = this.state.modalValue;
@@ -279,6 +280,8 @@
         });
       }
     },
+=======
+>>>>>>> origin/master
     addClick: function() {
       this.subCollection = new SubList();
       return this.setState({
