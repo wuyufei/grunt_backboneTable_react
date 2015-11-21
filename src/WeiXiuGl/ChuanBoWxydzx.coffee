@@ -11,7 +11,7 @@ getSelectData = (code)->
     async:false
     success:(data)->
       array = data
-  array
+  array   
 
 cbSelectData = getSelectData("CBBH")
 
