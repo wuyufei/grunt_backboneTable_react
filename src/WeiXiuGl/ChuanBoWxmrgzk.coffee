@@ -187,7 +187,6 @@ Page = React.createClass
     @subCollection.add(subModel)
     @setState
       showAddItemModal:false
-<<<<<<< HEAD
   saveClick:->
     data = @state.modalValue
     data.tbinv_vesworkcardcbs = @subCollection.toJSON()
@@ -196,9 +195,6 @@ Page = React.createClass
       @setState showModal:false
     else
       @setState error:error
-=======
-
->>>>>>> origin/master
   addClick:()->
     @subCollection = new SubList()
     @setState
