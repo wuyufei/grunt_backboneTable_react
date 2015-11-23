@@ -41,16 +41,23 @@
       },
       age: {
         type: "Text",
-        title: "年龄"
+        title: "年龄",
+        width: 200
       },
       birthday: {
         type: "DateTime",
         title: "出生日期",
         format: "yyyy-mm-dd"
       },
+      updateDate: {
+        type: "datetime",
+        title: "升级日期",
+        format: "yyyy-mm-dd"
+      },
       education: {
         title: "学历",
         type: "Select",
+        edit: true,
         options: [
           {
             val: "",
@@ -69,7 +76,8 @@
       },
       sb: {
         type: "Checkbox",
-        title: "标志"
+        title: "标志",
+        width: 80
       }
     }
   });
