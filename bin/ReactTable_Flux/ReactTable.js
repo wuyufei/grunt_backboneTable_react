@@ -1,5 +1,5 @@
 (function() {
-  var BackboneTable, Breadcrumb, BreadcrumbItem, Button, ButtonGroup, Col, Grid, Input, MenuItem, Modal, Overlay, Pagination, Popover, ReactTable, Row, SplitButton;
+  var BackboneTable, Breadcrumb, BreadcrumbItem, Button, ButtonGroup, Col, CreateCellContentMixin, Grid, Input, MenuItem, Modal, Overlay, Pagination, Popover, ReactTable, Row, SplitButton;
 
   Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal, Overlay = ReactBootstrap.Overlay, Popover = ReactBootstrap.Popover, Pagination = ReactBootstrap.Pagination, ButtonGroup = ReactBootstrap.ButtonGroup, SplitButton = ReactBootstrap.SplitButton, MenuItem = ReactBootstrap.MenuItem;
 
@@ -12,7 +12,111 @@
     }
   });
 
+  CreateCellContentMixin = {
+    getCellContent: function(model, key) {
+      var content, isEdit, opt, ref, ref1, schema;
+      schema = model.schema[key];
+      if (this.props.readonly === true) {
+        isEdit = false;
+      } else if (schema.edit === true || (model === ((ref = this.state.editCell) != null ? ref.model : void 0) && key === ((ref1 = this.state.editCell) != null ? ref1.key : void 0))) {
+        isEdit = true;
+      }
+      switch (schema.type.toLowerCase()) {
+        case "text":
+          if (isEdit) {
+            content = React.createElement("input", {
+              "style": {
+                height: 32
+              },
+              "className": "form-control",
+              "type": "text",
+              "bsSize": "small",
+              "value": model.get(key),
+              "autoFocus": "true"
+            });
+          } else {
+            content = React.createElement("span", null, model.get(key));
+          }
+          break;
+        case "select":
+          if (isEdit) {
+            content = React.createElement("select", {
+              "style": {
+                height: 32
+              },
+              "className": "form-control",
+              "type": "checkbox",
+              "bsSize": "small",
+              "value": model.get(key),
+              "autoFocus": "true"
+            }, (function() {
+              var i, len, ref2, results;
+              ref2 = schema.options;
+              results = [];
+              for (i = 0, len = ref2.length; i < len; i++) {
+                opt = ref2[i];
+                results.push(React.createElement("option", {
+                  "value": opt.val
+                }, opt.label));
+              }
+              return results;
+            })());
+          } else {
+            content = React.createElement("span", null, (_.findWhere(schema.options, {
+              val: model.get(key)
+            }).label));
+          }
+          break;
+        case "checkbox":
+          if (isEdit) {
+            content = React.createElement("input", {
+              "style": {
+                height: 32,
+                marginTop: 0
+              },
+              "className": "form-control",
+              "type": "checkbox",
+              "bsSize": "small",
+              "checked": model.get(key) === "1",
+              "autoFocus": "true"
+            });
+          } else if (model.get(key) === "1") {
+            content = React.createElement("span", {
+              "className": "glyphicon glyphicon-ok"
+            });
+          }
+          break;
+        case "datetime":
+          if (isEdit) {
+            content = React.createElement("div", {
+              "className": "input-group input-append date form_datetime"
+            }, React.createElement("input", {
+              "style": {
+                height: 32
+              },
+              "className": "form-control dtpControl_" + key,
+              "autoFocus": "true",
+              "value": model.get(key),
+              "type": "text",
+              "readOnly": "readonly"
+            }), React.createElement("span", {
+              "className": "input-group-addon add-on"
+            }, React.createElement("i", {
+              "className": "glyphicon glyphicon-remove"
+            })));
+          } else {
+            content = React.createElement("span", null, model.get(key));
+          }
+          break;
+        default:
+          content = React.createElement("span", null, model.get(key));
+      }
+      return content;
+    }
+  };
+
   ReactTable = React.createClass({
+    mixins: [CreateCellContentMixin],
     getInitialState: function() {
       return {
         activePage: 1
@@ -52,31 +156,41 @@
       return this.cellWidths = cellWidths;
     },
     createDateTimePickerControl: function() {
-      var el, k, results, schema, v;
+      var dtpControls, el, k, ref, results, schema, v;
       schema = this.props.collection.model.prototype.schema;
       el = $(this.getDOMNode());
       results = [];
       for (k in schema) {
         v = schema[k];
-        if (v.type.toLowerCase() === "datetime") {
-          results.push(el.find(".dtpControl_" + k).datetimepicker({
-            format: v.format,
-            language: "zh-CN",
-            weekStart: 1,
-            todayBtn: 1,
-            autoclose: 1,
-            todayHighLight: 1,
-            startView: 2,
-            minView: 2,
-            forceParse: 0,
-            todayBtn: true,
-            pickerPosition: "bottom-right"
-          }));
+        if (!(v.type.toLowerCase() === "datetime")) {
+          continue;
+        }
+        dtpControls = el.find(".dtpControl_" + k);
+        dtpControls.datetimepicker({
+          format: v.format,
+          language: "zh-CN",
+          weekStart: 1,
+          todayBtn: 1,
+          autoclose: 1,
+          todayHighLight: 1,
+          startView: 2,
+          minView: 2,
+          forceParse: 0,
+          todayBtn: true,
+          pickerPosition: "bottom-right"
+        });
+        if (((ref = this.state.editCell) != null ? ref.key : void 0) === k) {
+          results.push(dtpControls.datetimepicker("show"));
+        } else {
+          results.push(void 0);
         }
       }
       return results;
     },
-    cellClick: function(model, key) {
+    cellClick: function(model, key, e) {
+      this.setState({
+        selectedRow: model
+      });
       if (this.props.readonly !== true && model.schema[key].readonly !== true && model.schema[key].edit !== true) {
         return this.setState({
           editCell: {
@@ -125,106 +239,6 @@
         }
       }
       return sortModels;
-    },
-    getCellContent: function(model, key) {
-      var content, isEdit, opt, ref, ref1, schema;
-      schema = model.schema[key];
-      if (this.props.readonly === true) {
-        isEdit = false;
-      } else if (schema.edit === true || model === ((ref = this.state.editCell) != null ? ref.model : void 0) && key === ((ref1 = this.state.editCell) != null ? ref1.key : void 0)) {
-        isEdit = true;
-      }
-      switch (schema.type.toLowerCase()) {
-        case "text":
-          if (isEdit) {
-            content = React.createElement("input", {
-              "style": {
-                height: 36,
-                padding: 0
-              },
-              "className": "form-control",
-              "type": "text",
-              "bsSize": "small",
-              "value": model.get(key),
-              "autoFocus": "true"
-            });
-          } else {
-            content = React.createElement("span", null, model.get(key));
-          }
-          break;
-        case "select":
-          if (isEdit) {
-            content = React.createElement("select", {
-              "style": {
-                height: 36,
-                padding: 0
-              },
-              "className": "form-control",
-              "type": "checkbox",
-              "bsSize": "small",
-              "value": model.get(key),
-              "autoFocus": "true"
-            }, (function() {
-              var i, len, ref2, results;
-              ref2 = schema.options;
-              results = [];
-              for (i = 0, len = ref2.length; i < len; i++) {
-                opt = ref2[i];
-                results.push(React.createElement("option", {
-                  "value": opt.val
-                }, opt.label));
-              }
-              return results;
-            })());
-          } else {
-            content = React.createElement("span", null, (_.findWhere(schema.options, {
-              val: model.get(key)
-            }).label));
-          }
-          break;
-        case "checkbox":
-          if (isEdit) {
-            content = React.createElement("input", {
-              "style": {
-                height: 20,
-                marginTop: 2
-              },
-              "className": "form-control",
-              "type": "checkbox",
-              "bsSize": "small",
-              "checked": model.get(key) === "1",
-              "autoFocus": "true"
-            });
-          } else if (model.get(key) === "1") {
-            content = React.createElement("span", {
-              "className": "glyphicon glyphicon-ok"
-            });
-          }
-          break;
-        case "datetime":
-          if (isEdit) {
-            content = React.createElement("div", {
-              "className": "input-group input-append date form_datetime"
-            }, React.createElement("input", {
-              "ref": "datetimepicker",
-              "className": "form-control dtpControl_" + key,
-              "autoFocus": "true",
-              "value": model.get(key),
-              "type": "text",
-              "readOnly": "readonly"
-            }), React.createElement("span", {
-              "className": "input-group-addon add-on"
-            }, React.createElement("i", {
-              "className": "glyphicon glyphicon-remove"
-            })));
-          } else {
-            content = React.createElement("span", null, model.get(key));
-          }
-          break;
-        default:
-          content = React.createElement("span", null, model.get(key));
-      }
-      return content;
     },
     render: function() {
       var pageCollection, pageCount, pageRecordLength, ref, renderRowButton, sortCollection;
@@ -308,7 +322,7 @@
       })(this)())), React.createElement("div", {
         "className": "table-responsive"
       }, React.createElement("table", {
-        "className": "table table-bordered table-hover",
+        "className": "table table-bordered table-hover table-condensed",
         "style": {
           borderBottomColor: "rgb(221, 221, 221)",
           borderBottomStyle: "solid",
@@ -347,7 +361,8 @@
           if (((ref1 = _this.props.rowButtons) != null ? ref1.length : void 0) > 0) {
             ths.push(React.createElement("th", {
               "style": {
-                width: "160px"
+                width: 160,
+                minWidth: 160
               }
             }));
           }
@@ -355,43 +370,35 @@
         };
       })(this)()), React.createElement("tbody", null, (function(_this) {
         return function() {
-          var cellStyle, i, k, len, model, results, v;
+          var i, k, len, model, results, style, v;
           results = [];
           for (i = 0, len = pageCollection.length; i < len; i++) {
             model = pageCollection[i];
             results.push(React.createElement("tr", {
               "className": (_this.state.selectedRow === model ? "info" : "")
             }, (function() {
-              var ref1, ref2, ref3, ref4, ref5, results1;
+              var ref1, ref2, ref3, results1;
               ref1 = model.schema;
               results1 = [];
               for (k in ref1) {
                 v = ref1[k];
-                cellStyle = {};
-                if (model === ((ref2 = this.state.editCell) != null ? ref2.model : void 0) && k === ((ref3 = this.state.editCell) != null ? ref3.key : void 0) || v.edit === true) {
-                  if (v.edit === true && v.type.toLowerCase() === "datetime") {
-                    cellStyle.width = 200;
-                    cellStyle.padding = 1;
-                  }
-                  if (model === ((ref4 = this.state.editCell) != null ? ref4.model : void 0) && k === ((ref5 = this.state.editCell) != null ? ref5.key : void 0)) {
-                    cellStyle.width = this.cellWidths[k];
-                  }
-                  results1.push(React.createElement("td", {
-                    "style": cellStyle,
-                    "onClick": this.cellClick.bind(this, model, k)
-                  }, this.getCellContent(model, k)));
+                if (((ref2 = this.state.editCell) != null ? ref2.model : void 0) === model && this.state.editCell.key === k) {
+                  style = {
+                    padding: 0,
+                    width: this.cellWidths[k]
+                  };
+                } else if (v.edit === true) {
+                  style = {
+                    padding: 0,
+                    width: (ref3 = v.width) != null ? ref3 : 200
+                  };
                 } else {
-                  if (v.type.toLowerCase() === "checkbox") {
-                    results1.push(React.createElement("td", {
-                      "className": "text-center",
-                      "onClick": this.cellClick.bind(this, model, k)
-                    }, this.getCellContent(model, k)));
-                  } else {
-                    results1.push(React.createElement("td", {
-                      "onClick": this.cellClick.bind(this, model, k)
-                    }, this.getCellContent(model, k)));
-                  }
+                  style = {};
                 }
+                results1.push(React.createElement("td", {
+                  "style": style,
+                  "onClick": this.cellClick.bind(this, model, k)
+                }, this.getCellContent(model, k)));
               }
               return results1;
             }).call(_this), React.createElement("td", null, (_this.props.rowButtons != null ? renderRowButton() : null))));

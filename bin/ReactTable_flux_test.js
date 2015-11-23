@@ -42,12 +42,13 @@
       age: {
         type: "Text",
         title: "年龄",
-        width: 200
+        edit: true
       },
       birthday: {
         type: "DateTime",
         title: "出生日期",
-        format: "yyyy-mm-dd"
+        format: "yyyy-mm-dd",
+        edit: true
       },
       updateDate: {
         type: "datetime",
@@ -57,7 +58,6 @@
       education: {
         title: "学历",
         type: "Select",
-        edit: true,
         options: [
           {
             val: "",
