@@ -81,29 +81,6 @@ CreateCellContentMixin =
       @setState error:null,editCellIsValidate:true,editCell:null
     e.preventDefault()
     e.stopPropagation()
-
-ReactTable = React.createClass
-  mixins:[CreateCellContentMixin]
-  getInitialState:->
-    activePage:1
-    editCellIsValidate:true
-  componentWillMount:->
-  componentDidMount:->
-    @getColumnsWidth()
-    @createDateTimePickerControl()
-  componentWillUpdate:(nextProps,nextState)->
-    el = $(@getDOMNode())
-    schema = @props.collection.model::schema
-    el.find(".dtpControl_#{k}").datetimepicker("remove") for k,v of schema when v.type.toLowerCase() is "datetime"
-  componentDidUpdate:->
-    @getColumnsWidth()
-    @createDateTimePickerControl()
-  getColumnsWidth:->
-    cellWidths={}
-    for k,v of @props.collection.model::schema
-      $el = $(@refs["th_#{k}"].getDOMNode())
-      cellWidths[k] = $el.outerWidth()
-    @cellWidths = cellWidths
   createDateTimePickerControl:->
     that = @
     schema = @props.collection.model::schema
@@ -123,6 +100,35 @@ ReactTable = React.createClass
 
       if @state.editCell?.key is k
         dtpControls.datetimepicker("show")
+
+ReactTable = React.createClass
+  mixins:[CreateCellContentMixin]
+  getInitialState:->
+    activePage:1
+    editCellIsValidate:true
+    showModal:false
+  componentWillMount:->
+  componentDidMount:->
+    @getColumnsWidth()
+    @createDateTimePickerControl()
+  componentWillUpdate:(nextProps,nextState)->
+    el = $(@getDOMNode())
+    schema = @props.collection.model::schema
+    el.find(".dtpControl_#{k}").datetimepicker("remove") for k,v of schema when v.type.toLowerCase() is "datetime"
+  componentDidUpdate:->
+    @getColumnsWidth()
+    @createDateTimePickerControl()
+  showModal:->
+    @setState showModal:true
+  hideModal:->
+    @setState showModal:false
+  getColumnsWidth:->
+    cellWidths={}
+    for k,v of @props.collection.model::schema
+      $el = $(@refs["th_#{k}"].getDOMNode())
+      cellWidths[k] = $el.outerWidth()
+    @cellWidths = cellWidths
+
 
   cellClick:(model,key,e)->
     @setState selectedRow:model
@@ -178,7 +184,7 @@ ReactTable = React.createClass
               {
                 do =>
                   for btnInfo in @props.headerButtons
-                    <Button bsStyle={btnInfo.style} onClick={btnInfo.onClick}>{btnInfo.text}</Button>
+                    <Button bsStyle={btnInfo.style} onClick={btnInfo.onClick} onClick={@showModal}>{btnInfo.text}</Button>
               }
             </div>
         </div>
@@ -228,5 +234,27 @@ ReactTable = React.createClass
             </table>
             <Pagination prev next first last ellipsis items={pageCount} maxButtons={pageRecordLength} activePage={this.state.activePage} onSelect={this.pageChange} />
         </div>
+        <Modal show={@state.showModal} onHide={@hideModal} bsSize="large" >
+          <Modal.Header closeButton>
+            <Modal.Title>详情</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Grid fluid=true >
+              <Row className="show-grid">
+                {do =>
+                  if @state.selectedRow?
+                    model = @state.selectedRow
+                    for k,v of model.schema
+                      <Col xs={12} sm={6} md={6}>
+                        <Input type="text" addonBefore={v.title} value={model.get(k)}/>
+                      </Col>}
+              </Row>
+            </Grid>
+          </Modal.Body>
+          <Modal.Footer>
+                    <Button bsStyle="primary">保存</Button>
+                    <Button bsStyle="default" onClick={@hideModal}>取消</Button>
+          </Modal.Footer>
+        </Modal>
     </div>
 console.log ""

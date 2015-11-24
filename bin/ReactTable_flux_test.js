@@ -45,8 +45,7 @@
       },
       age: {
         type: "Text",
-        title: "年龄",
-        edit: true
+        title: "年龄"
       },
       birthday: {
         type: "DateTime",

@@ -35,7 +35,6 @@ User = Backbone.Model.extend
     age:
       type:"Text"
       title:"年龄"
-      edit:true
     birthday:
       type:"DateTime"
       title:"出生日期"

@@ -224,49 +224,6 @@
       }
       e.preventDefault();
       return e.stopPropagation();
-    }
-  };
-
-  ReactTable = React.createClass({
-    mixins: [CreateCellContentMixin],
-    getInitialState: function() {
-      return {
-        activePage: 1,
-        editCellIsValidate: true
-      };
-    },
-    componentWillMount: function() {},
-    componentDidMount: function() {
-      this.getColumnsWidth();
-      return this.createDateTimePickerControl();
-    },
-    componentWillUpdate: function(nextProps, nextState) {
-      var el, k, results, schema, v;
-      el = $(this.getDOMNode());
-      schema = this.props.collection.model.prototype.schema;
-      results = [];
-      for (k in schema) {
-        v = schema[k];
-        if (v.type.toLowerCase() === "datetime") {
-          results.push(el.find(".dtpControl_" + k).datetimepicker("remove"));
-        }
-      }
-      return results;
-    },
-    componentDidUpdate: function() {
-      this.getColumnsWidth();
-      return this.createDateTimePickerControl();
-    },
-    getColumnsWidth: function() {
-      var $el, cellWidths, k, ref1, v;
-      cellWidths = {};
-      ref1 = this.props.collection.model.prototype.schema;
-      for (k in ref1) {
-        v = ref1[k];
-        $el = $(this.refs["th_" + k].getDOMNode());
-        cellWidths[k] = $el.outerWidth();
-      }
-      return this.cellWidths = cellWidths;
     },
     createDateTimePickerControl: function() {
       var dtpControls, el, k, ref1, results, schema, that, v;
@@ -319,6 +276,60 @@
         }
       }
       return results;
+    }
+  };
+
+  ReactTable = React.createClass({
+    mixins: [CreateCellContentMixin],
+    getInitialState: function() {
+      return {
+        activePage: 1,
+        editCellIsValidate: true,
+        showModal: false
+      };
+    },
+    componentWillMount: function() {},
+    componentDidMount: function() {
+      this.getColumnsWidth();
+      return this.createDateTimePickerControl();
+    },
+    componentWillUpdate: function(nextProps, nextState) {
+      var el, k, results, schema, v;
+      el = $(this.getDOMNode());
+      schema = this.props.collection.model.prototype.schema;
+      results = [];
+      for (k in schema) {
+        v = schema[k];
+        if (v.type.toLowerCase() === "datetime") {
+          results.push(el.find(".dtpControl_" + k).datetimepicker("remove"));
+        }
+      }
+      return results;
+    },
+    componentDidUpdate: function() {
+      this.getColumnsWidth();
+      return this.createDateTimePickerControl();
+    },
+    showModal: function() {
+      return this.setState({
+        showModal: true
+      });
+    },
+    hideModal: function() {
+      return this.setState({
+        showModal: false
+      });
+    },
+    getColumnsWidth: function() {
+      var $el, cellWidths, k, ref1, v;
+      cellWidths = {};
+      ref1 = this.props.collection.model.prototype.schema;
+      for (k in ref1) {
+        v = ref1[k];
+        $el = $(this.refs["th_" + k].getDOMNode());
+        cellWidths[k] = $el.outerWidth();
+      }
+      return this.cellWidths = cellWidths;
     },
     cellClick: function(model, key, e) {
       this.setState({
@@ -447,7 +458,8 @@
             btnInfo = ref2[i];
             results.push(React.createElement(Button, {
               "bsStyle": btnInfo.style,
-              "onClick": btnInfo.onClick
+              "onClick": btnInfo.onClick,
+              "onClick": _this.showModal
             }, btnInfo.text));
           }
           return results;
@@ -548,7 +560,44 @@
         "maxButtons": pageRecordLength,
         "activePage": this.state.activePage,
         "onSelect": this.pageChange
-      })));
+      })), React.createElement(Modal, {
+        "show": this.state.showModal,
+        "onHide": this.hideModal,
+        "bsSize": "large"
+      }, React.createElement(Modal.Header, {
+        "closeButton": true
+      }, React.createElement(Modal.Title, null, "\u8be6\u60c5")), React.createElement(Modal.Body, null, React.createElement(Grid, {
+        "fluid": true
+      }, React.createElement(Row, {
+        "className": "show-grid"
+      }, (function(_this) {
+        return function() {
+          var k, model, ref2, results, v;
+          if (_this.state.selectedRow != null) {
+            model = _this.state.selectedRow;
+            ref2 = model.schema;
+            results = [];
+            for (k in ref2) {
+              v = ref2[k];
+              results.push(React.createElement(Col, {
+                "xs": 12.,
+                "sm": 6.,
+                "md": 6.
+              }, React.createElement(Input, {
+                "type": "text",
+                "addonBefore": v.title,
+                "value": model.get(k)
+              })));
+            }
+            return results;
+          }
+        };
+      })(this)()))), React.createElement(Modal.Footer, null, React.createElement(Button, {
+        "bsStyle": "primary"
+      }, "\u4fdd\u5b58"), React.createElement(Button, {
+        "bsStyle": "default",
+        "onClick": this.hideModal
+      }, "\u53d6\u6d88"))));
     }
   });
 
