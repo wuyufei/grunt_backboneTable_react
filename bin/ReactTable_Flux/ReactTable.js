@@ -7,18 +7,42 @@
     initialize: function(options) {
       return this.options = _.extend({}, options);
     },
+    setModel: function(model, key, value) {
+      var error, invalidHandle;
+      error = null;
+      invalidHandle = function(model, er) {
+        error = er;
+        return model.set(key, value, {
+          silent: true
+        });
+      };
+      model.on("invalid", invalidHandle);
+      model.set(key, value, {
+        validate: true,
+        silent: true
+      });
+      model.off("invalid", invalidHandle);
+      if ((error != null ? error[key] : void 0) != null) {
+        return error;
+      } else {
+        return null;
+      }
+    },
     render: function() {
-      return ReactDOM.render(React.createElement(ReactTable, React.__spread({}, this.options)), this.el);
+      return ReactDOM.render(React.createElement(ReactTable, React.__spread({}, this.options, {
+        "setModel": this.setModel
+      })), this.el);
     }
   });
 
   CreateCellContentMixin = {
     getCellContent: function(model, key) {
-      var content, isEdit, opt, ref, ref1, schema;
+      var content, error, isEdit, opt, ref, ref1, ref2, ref3, ref4, ref5, schema;
       schema = model.schema[key];
+      ref = key + model.cid;
       if (this.props.readonly === true) {
         isEdit = false;
-      } else if (schema.edit === true || (model === ((ref = this.state.editCell) != null ? ref.model : void 0) && key === ((ref1 = this.state.editCell) != null ? ref1.key : void 0))) {
+      } else if (schema.edit === true || (model === ((ref1 = this.state.editCell) != null ? ref1.model : void 0) && key === ((ref2 = this.state.editCell) != null ? ref2.key : void 0))) {
         isEdit = true;
       }
       switch (schema.type.toLowerCase()) {
@@ -28,12 +52,26 @@
               "style": {
                 height: 32
               },
+              "ref": ref,
               "className": "form-control",
               "type": "text",
               "bsSize": "small",
               "value": model.get(key),
+              "onChange": this.onCellValueChange.bind(this, model, key),
+              "onBlur": this.onCellEndEdit.bind(this, model, key),
               "autoFocus": "true"
             });
+            if (((ref3 = this.state.error) != null ? ref3.model : void 0) === model && this.state.error.key === key) {
+              error = React.createElement(Overlay, {
+                "show": true,
+                "target": ((function(_this) {
+                  return function() {
+                    return ReactDOM.findDOMNode(_this.refs[ref]);
+                  };
+                })(this)),
+                "placement": "right"
+              }, React.createElement(Popover, null, this.state.error.msg));
+            }
           } else {
             content = React.createElement("span", null, model.get(key));
           }
@@ -44,23 +82,36 @@
               "style": {
                 height: 32
               },
+              "ref": ref,
               "className": "form-control",
-              "type": "checkbox",
               "bsSize": "small",
               "value": model.get(key),
+              "onChange": this.onCellValueChange.bind(this, model, key),
+              "onBlur": this.onCellEndEdit.bind(this, model, key),
               "autoFocus": "true"
             }, (function() {
-              var i, len, ref2, results;
-              ref2 = schema.options;
+              var i, len, ref4, results;
+              ref4 = schema.options;
               results = [];
-              for (i = 0, len = ref2.length; i < len; i++) {
-                opt = ref2[i];
+              for (i = 0, len = ref4.length; i < len; i++) {
+                opt = ref4[i];
                 results.push(React.createElement("option", {
                   "value": opt.val
                 }, opt.label));
               }
               return results;
             })());
+            if (((ref4 = this.state.error) != null ? ref4.model : void 0) === model && this.state.error.key === key) {
+              error = React.createElement(Overlay, {
+                "show": true,
+                "target": ((function(_this) {
+                  return function() {
+                    return ReactDOM.findDOMNode(_this.refs[ref]);
+                  };
+                })(this)),
+                "placement": "right"
+              }, React.createElement(Popover, null, this.state.error.msg));
+            }
           } else {
             content = React.createElement("span", null, (_.findWhere(schema.options, {
               val: model.get(key)
@@ -78,6 +129,8 @@
               "type": "checkbox",
               "bsSize": "small",
               "checked": model.get(key) === "1",
+              "onChange": this.onCellValueChange.bind(this, model, key),
+              "onBlur": this.onCellEndEdit.bind(this, model, key),
               "autoFocus": "true"
             });
           } else if (model.get(key) === "1") {
@@ -91,19 +144,34 @@
             content = React.createElement("div", {
               "className": "input-group input-append date form_datetime"
             }, React.createElement("input", {
+              "ref": ref,
               "style": {
                 height: 32
               },
               "className": "form-control dtpControl_" + key,
               "autoFocus": "true",
+              "data-cid": model.cid,
               "value": model.get(key),
               "type": "text",
+              "onChange": this.onCellValueChange.bind(this, model, key),
               "readOnly": "readonly"
             }), React.createElement("span", {
-              "className": "input-group-addon add-on"
+              "className": "input-group-addon add-on",
+              "onClick": this.onCellEndEdit.bind(this, model, key)
             }, React.createElement("i", {
               "className": "glyphicon glyphicon-remove"
             })));
+            if (((ref5 = this.state.error) != null ? ref5.model : void 0) === model && this.state.error.key === key) {
+              error = React.createElement(Overlay, {
+                "show": true,
+                "target": ((function(_this) {
+                  return function() {
+                    return ReactDOM.findDOMNode(_this.refs[ref]);
+                  };
+                })(this)),
+                "placement": "right"
+              }, React.createElement(Popover, null, this.state.error.msg));
+            }
           } else {
             content = React.createElement("span", null, model.get(key));
           }
@@ -111,7 +179,51 @@
         default:
           content = React.createElement("span", null, model.get(key));
       }
+      if (error) {
+        content = [content, error];
+      }
       return content;
+    },
+    onCellValueChange: function(model, key, e) {
+      var error, value;
+      value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
+      error = this.props.setModel(model, key, value);
+      if (error) {
+        return this.setState({
+          error: {
+            model: model,
+            key: key,
+            msg: error[key]
+          }
+        });
+      } else {
+        return this.setState({
+          error: null
+        });
+      }
+    },
+    onCellEndEdit: function(model, key, e) {
+      var error, value;
+      value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
+      error = this.props.setModel(model, key, value);
+      if (error) {
+        this.setState({
+          error: {
+            model: model,
+            key: key,
+            msg: error[key]
+          },
+          editCellIsValidate: false
+        });
+      } else {
+        this.setState({
+          error: null,
+          editCellIsValidate: true,
+          editCell: null
+        });
+      }
+      e.preventDefault();
+      return e.stopPropagation();
     }
   };
 
@@ -119,7 +231,8 @@
     mixins: [CreateCellContentMixin],
     getInitialState: function() {
       return {
-        activePage: 1
+        activePage: 1,
+        editCellIsValidate: true
       };
     },
     componentWillMount: function() {},
@@ -145,18 +258,19 @@
       return this.createDateTimePickerControl();
     },
     getColumnsWidth: function() {
-      var $el, cellWidths, k, ref, v;
+      var $el, cellWidths, k, ref1, v;
       cellWidths = {};
-      ref = this.props.collection.model.prototype.schema;
-      for (k in ref) {
-        v = ref[k];
+      ref1 = this.props.collection.model.prototype.schema;
+      for (k in ref1) {
+        v = ref1[k];
         $el = $(this.refs["th_" + k].getDOMNode());
         cellWidths[k] = $el.outerWidth();
       }
       return this.cellWidths = cellWidths;
     },
     createDateTimePickerControl: function() {
-      var dtpControls, el, k, ref, results, schema, v;
+      var dtpControls, el, k, ref1, results, schema, that, v;
+      that = this;
       schema = this.props.collection.model.prototype.schema;
       el = $(this.getDOMNode());
       results = [];
@@ -179,7 +293,26 @@
           todayBtn: true,
           pickerPosition: "bottom-right"
         });
-        if (((ref = this.state.editCell) != null ? ref.key : void 0) === k) {
+        dtpControls.on("changeDate", (function(k) {
+          return function(e) {
+            debugger;
+            var $el, model, ref1;
+            $el = $(e.currentTarget);
+            model = that.props.collection.get($el.data("cid"));
+            e = {
+              target: {
+                value: $el.val()
+              }
+            };
+            that.onCellEndEdit(model, k, e);
+            if (((ref1 = that.state.editCell) != null ? ref1.model : void 0) === model && that.state.editCell.key === k) {
+              return that.setState({
+                editCell: null
+              });
+            }
+          };
+        })(k));
+        if (((ref1 = this.state.editCell) != null ? ref1.key : void 0) === k) {
           results.push(dtpControls.datetimepicker("show"));
         } else {
           results.push(void 0);
@@ -191,7 +324,7 @@
       this.setState({
         selectedRow: model
       });
-      if (this.props.readonly !== true && model.schema[key].readonly !== true && model.schema[key].edit !== true) {
+      if (this.props.readonly !== true && model.schema[key].readonly !== true && model.schema[key].edit !== true && this.state.editCellIsValidate === true) {
         return this.setState({
           editCell: {
             model: model,
@@ -225,9 +358,9 @@
       if (this.state.sortField) {
         getSortValue = schema[this.state.sortField].sortValue;
         sortModels.sort(function(a, b) {
-          var ref, ref1;
-          a = (ref = typeof getSortValue === "function" ? getSortValue(a) : void 0) != null ? ref : a.get(that.state.sortField);
-          b = (ref1 = typeof getSortValue === "function" ? getSortValue(b) : void 0) != null ? ref1 : b.get(that.state.sortField);
+          var ref1, ref2;
+          a = (ref1 = typeof getSortValue === "function" ? getSortValue(a) : void 0) != null ? ref1 : a.get(that.state.sortField);
+          b = (ref2 = typeof getSortValue === "function" ? getSortValue(b) : void 0) != null ? ref2 : b.get(that.state.sortField);
           if (_.isString(a)) {
             return a.localeCompare(b);
           } else {
@@ -241,22 +374,22 @@
       return sortModels;
     },
     render: function() {
-      var pageCollection, pageCount, pageRecordLength, ref, renderRowButton, sortCollection;
-      pageRecordLength = (ref = this.props.pageRecordLength) != null ? ref : 10;
-      pageCount = Math.ceil(this.props.collection.length / 10) - 1;
+      var pageCollection, pageCount, pageRecordLength, ref1, renderRowButton, sortCollection;
+      pageRecordLength = (ref1 = this.props.pageRecordLength) != null ? ref1 : 10;
+      pageCount = Math.ceil(this.props.collection.length / 10);
       sortCollection = this.getSortCollection();
-      pageCollection = sortCollection.slice(this.state.activePage * 10, +((this.state.activePage + 1) * 10 - 1) + 1 || 9e9);
+      pageCollection = sortCollection.slice((this.state.activePage - 1) * 10, +(this.state.activePage * 10 - 1) + 1 || 9e9);
       renderRowButton = (function(_this) {
         return function() {
           return React.createElement(ButtonGroup, {
             "bsSize": "xsmall"
           }, (function() {
-            var btnInfo, i, j, len, len1, ref1, ref2, ref3, ref4, results, results1;
-            if (((ref1 = _this.props.rowButtons) != null ? ref1.length : void 0) <= 3) {
-              ref2 = _this.props.rowButtons.slice(0, 3);
+            var btnInfo, i, j, len, len1, ref2, ref3, ref4, ref5, results, results1;
+            if (((ref2 = _this.props.rowButtons) != null ? ref2.length : void 0) <= 3) {
+              ref3 = _this.props.rowButtons.slice(0, 3);
               results = [];
-              for (i = 0, len = ref2.length; i < len; i++) {
-                btnInfo = ref2[i];
+              for (i = 0, len = ref3.length; i < len; i++) {
+                btnInfo = ref3[i];
                 if (btnInfo != null) {
                   results.push(React.createElement(Button, {
                     "onClick": btnInfo.onclick
@@ -264,11 +397,11 @@
                 }
               }
               return results;
-            } else if (((ref3 = _this.props.rowButtons) != null ? ref3.length : void 0) > 3) {
-              ref4 = _this.props.rowButtons.slice(0, 2);
+            } else if (((ref4 = _this.props.rowButtons) != null ? ref4.length : void 0) > 3) {
+              ref5 = _this.props.rowButtons.slice(0, 2);
               results1 = [];
-              for (j = 0, len1 = ref4.length; j < len1; j++) {
-                btnInfo = ref4[j];
+              for (j = 0, len1 = ref5.length; j < len1; j++) {
+                btnInfo = ref5[j];
                 results1.push(React.createElement(Button, {
                   "onClick": btnInfo.onclick
                 }, btnInfo.text));
@@ -276,17 +409,17 @@
               return results1;
             }
           })(), (function() {
-            var ref1;
-            if (((ref1 = _this.props.rowButtons) != null ? ref1.length : void 0) > 3) {
+            var ref2;
+            if (((ref2 = _this.props.rowButtons) != null ? ref2.length : void 0) > 3) {
               return React.createElement(SplitButton, {
                 "bsSize": "xsmall",
                 "title": _this.props.rowButtons[2].text
               }, (function() {
-                var btnInfo, i, len, ref2, results;
-                ref2 = _this.props.rowButtons.slice(3);
+                var btnInfo, i, len, ref3, results;
+                ref3 = _this.props.rowButtons.slice(3);
                 results = [];
-                for (i = 0, len = ref2.length; i < len; i++) {
-                  btnInfo = ref2[i];
+                for (i = 0, len = ref3.length; i < len; i++) {
+                  btnInfo = ref3[i];
                   results.push(React.createElement(MenuItem, null, btnInfo.text));
                 }
                 return results;
@@ -307,11 +440,11 @@
         }
       }, (function(_this) {
         return function() {
-          var btnInfo, i, len, ref1, results;
-          ref1 = _this.props.headerButtons;
+          var btnInfo, i, len, ref2, results;
+          ref2 = _this.props.headerButtons;
           results = [];
-          for (i = 0, len = ref1.length; i < len; i++) {
-            btnInfo = ref1[i];
+          for (i = 0, len = ref2.length; i < len; i++) {
+            btnInfo = ref2[i];
             results.push(React.createElement(Button, {
               "bsStyle": btnInfo.style,
               "onClick": btnInfo.onClick
@@ -330,13 +463,13 @@
         }
       }, React.createElement("thead", null, (function(_this) {
         return function() {
-          var k, ref1, ths, v;
+          var k, ref2, ths, v;
           ths = (function() {
-            var ref1, results;
-            ref1 = this.props.collection.model.prototype.schema;
+            var ref2, results;
+            ref2 = this.props.collection.model.prototype.schema;
             results = [];
-            for (k in ref1) {
-              v = ref1[k];
+            for (k in ref2) {
+              v = ref2[k];
               results.push(React.createElement("th", {
                 "ref": "th_" + k,
                 "onClick": this.sort.bind(this, k)
@@ -358,7 +491,7 @@
             }
             return results;
           }).call(_this);
-          if (((ref1 = _this.props.rowButtons) != null ? ref1.length : void 0) > 0) {
+          if (((ref2 = _this.props.rowButtons) != null ? ref2.length : void 0) > 0) {
             ths.push(React.createElement("th", {
               "style": {
                 width: 160,
@@ -377,12 +510,12 @@
             results.push(React.createElement("tr", {
               "className": (_this.state.selectedRow === model ? "info" : "")
             }, (function() {
-              var ref1, ref2, ref3, results1;
-              ref1 = model.schema;
+              var ref2, ref3, ref4, results1;
+              ref2 = model.schema;
               results1 = [];
-              for (k in ref1) {
-                v = ref1[k];
-                if (((ref2 = this.state.editCell) != null ? ref2.model : void 0) === model && this.state.editCell.key === k) {
+              for (k in ref2) {
+                v = ref2[k];
+                if (((ref3 = this.state.editCell) != null ? ref3.model : void 0) === model && this.state.editCell.key === k) {
                   style = {
                     padding: 0,
                     width: this.cellWidths[k]
@@ -390,7 +523,7 @@
                 } else if (v.edit === true) {
                   style = {
                     padding: 0,
-                    width: (ref3 = v.width) != null ? ref3 : 200
+                    width: (ref4 = v.width) != null ? ref4 : 200
                   };
                 } else {
                   style = {};

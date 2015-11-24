@@ -18,8 +18,11 @@ User = Backbone.Model.extend
       required:true
       msg:"请输入年龄"
     birthday:
-      required:false
+      required:true
       msg:"请输入出生日期"
+    updateDate:
+      required:false
+      msg:"请输入升级日期"
     education:
       required:true
       msg:"请选择学历"
@@ -37,7 +40,6 @@ User = Backbone.Model.extend
       type:"DateTime"
       title:"出生日期"
       format:"yyyy-mm-dd"
-      edit:true
     updateDate:
       type:"datetime"
       title:"升级日期"
@@ -71,7 +73,7 @@ template =
             'name':"@cname"
             "age": "@integer(10,80)"
             "birthday":"@date"
-            "education|1":["1","2","3"]
+            "education|1":["","1","2","3"]
             "sb|1":["0","1"]
         ]
 Mock.mock /users/,"get",(options)->
