@@ -1,7 +1,7 @@
 (function() {
-  var BackboneTable, Breadcrumb, BreadcrumbItem, Button, ButtonGroup, Col, CreateCellContentMixin, Grid, Input, MenuItem, Modal, Overlay, Pagination, Popover, ReactTable, Row, SplitButton;
+  var BackboneTable, Breadcrumb, BreadcrumbItem, Button, ButtonGroup, Col, CreateCellContentMixin, Dropdown, Glyphicon, Grid, Input, MenuItem, Modal, Overlay, Pagination, Popover, ReactTable, Row, SplitButton;
 
-  Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal, Overlay = ReactBootstrap.Overlay, Popover = ReactBootstrap.Popover, Pagination = ReactBootstrap.Pagination, ButtonGroup = ReactBootstrap.ButtonGroup, SplitButton = ReactBootstrap.SplitButton, MenuItem = ReactBootstrap.MenuItem;
+  Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal, Overlay = ReactBootstrap.Overlay, Popover = ReactBootstrap.Popover, Pagination = ReactBootstrap.Pagination, ButtonGroup = ReactBootstrap.ButtonGroup, SplitButton = ReactBootstrap.SplitButton, MenuItem = ReactBootstrap.MenuItem, Glyphicon = ReactBootstrap.Glyphicon, Dropdown = ReactBootstrap.Dropdown;
 
   window.BackboneTable = BackboneTable = Backbone.View.extend({
     initialize: function(options) {
@@ -36,8 +36,29 @@
   });
 
   CreateCellContentMixin = {
+    componentWillUpdate: function(nextProps, nextState) {
+      var el, k, results, schema, v;
+      el = $(this.getDOMNode());
+      schema = this.props.collection.model.prototype.schema;
+      results = [];
+      for (k in schema) {
+        v = schema[k];
+        if (v.type.toLowerCase() === "datetime") {
+          results.push(el.find(".dtpControl_" + k).datetimepicker("remove"));
+        }
+      }
+      return results;
+    },
+    componentDidMount: function() {
+      this.getColumnsWidth();
+      return this.createDateTimePickerControl();
+    },
+    componentDidUpdate: function() {
+      this.getColumnsWidth();
+      return this.createDateTimePickerControl();
+    },
     getCellContent: function(model, key) {
-      var content, error, isEdit, opt, ref, ref1, ref2, ref3, ref4, ref5, schema;
+      var content, error, isEdit, opt, ref, ref1, ref2, ref3, schema;
       schema = model.schema[key];
       ref = key + model.cid;
       if (this.props.readonly === true) {
@@ -45,144 +66,166 @@
       } else if (schema.edit === true || (model === ((ref1 = this.state.editCell) != null ? ref1.model : void 0) && key === ((ref2 = this.state.editCell) != null ? ref2.key : void 0))) {
         isEdit = true;
       }
-      switch (schema.type.toLowerCase()) {
-        case "text":
-          if (isEdit) {
-            content = React.createElement("input", {
-              "style": {
-                height: 32
-              },
-              "ref": ref,
-              "className": "form-control",
-              "type": "text",
-              "bsSize": "small",
-              "value": model.get(key),
-              "onChange": this.onCellValueChange.bind(this, model, key),
-              "onBlur": this.onCellEndEdit.bind(this, model, key),
-              "autoFocus": "true"
-            });
-            if (((ref3 = this.state.error) != null ? ref3.model : void 0) === model && this.state.error.key === key) {
-              error = React.createElement(Overlay, {
-                "show": true,
-                "target": ((function(_this) {
-                  return function() {
-                    return ReactDOM.findDOMNode(_this.refs[ref]);
-                  };
-                })(this)),
-                "placement": "right"
-              }, React.createElement(Popover, null, this.state.error.msg));
-            }
-          } else {
-            content = React.createElement("span", null, model.get(key));
+      if (isEdit) {
+        content = (function() {
+          switch (schema.type.toLowerCase()) {
+            case "text":
+              return React.createElement("input", {
+                "style": {
+                  height: 32
+                },
+                "ref": ref,
+                "className": "form-control",
+                "type": "text",
+                "bsSize": "small",
+                "value": model.get(key),
+                "onChange": this.onCellValueChange.bind(this, model, key),
+                "onBlur": this.onCellEndEdit.bind(this, model, key),
+                "autoFocus": "true"
+              });
+            case "select":
+              return React.createElement("select", {
+                "style": {
+                  height: 32
+                },
+                "ref": ref,
+                "className": "form-control",
+                "bsSize": "small",
+                "value": model.get(key),
+                "onChange": this.onCellValueChange.bind(this, model, key),
+                "onBlur": this.onCellEndEdit.bind(this, model, key),
+                "autoFocus": "true"
+              }, (function() {
+                var i, len, ref3, results;
+                ref3 = schema.options;
+                results = [];
+                for (i = 0, len = ref3.length; i < len; i++) {
+                  opt = ref3[i];
+                  results.push(React.createElement("option", {
+                    "value": opt.val
+                  }, opt.label));
+                }
+                return results;
+              })());
+            case "checkbox":
+              return React.createElement("input", {
+                "style": {
+                  height: 32,
+                  marginTop: 0
+                },
+                "className": "form-control",
+                "type": "checkbox",
+                "bsSize": "small",
+                "checked": model.get(key) === "1",
+                "onChange": this.onCellValueChange.bind(this, model, key),
+                "onBlur": this.onCellEndEdit.bind(this, model, key),
+                "autoFocus": "true"
+              });
+            case "datetime":
+              return React.createElement("div", {
+                "className": "input-group input-append date form_datetime"
+              }, React.createElement("input", {
+                "ref": ref,
+                "style": {
+                  height: 32
+                },
+                "className": "form-control dtpControl_" + key,
+                "autoFocus": "true",
+                "data-cid": model.cid,
+                "value": model.get(key),
+                "type": "text",
+                "onChange": this.onCellValueChange.bind(this, model, key),
+                "readOnly": "readonly"
+              }), React.createElement("span", {
+                "className": "input-group-addon add-on",
+                "onClick": this.onCellEndEdit.bind(this, model, key)
+              }, React.createElement("i", {
+                "className": "glyphicon glyphicon-remove"
+              })));
           }
-          break;
-        case "select":
-          if (isEdit) {
-            content = React.createElement("select", {
-              "style": {
-                height: 32
-              },
-              "ref": ref,
-              "className": "form-control",
-              "bsSize": "small",
-              "value": model.get(key),
-              "onChange": this.onCellValueChange.bind(this, model, key),
-              "onBlur": this.onCellEndEdit.bind(this, model, key),
-              "autoFocus": "true"
-            }, (function() {
-              var i, len, ref4, results;
-              ref4 = schema.options;
-              results = [];
-              for (i = 0, len = ref4.length; i < len; i++) {
-                opt = ref4[i];
-                results.push(React.createElement("option", {
-                  "value": opt.val
-                }, opt.label));
-              }
-              return results;
-            })());
-            if (((ref4 = this.state.error) != null ? ref4.model : void 0) === model && this.state.error.key === key) {
-              error = React.createElement(Overlay, {
-                "show": true,
-                "target": ((function(_this) {
-                  return function() {
-                    return ReactDOM.findDOMNode(_this.refs[ref]);
-                  };
-                })(this)),
-                "placement": "right"
-              }, React.createElement(Popover, null, this.state.error.msg));
-            }
-          } else {
-            content = React.createElement("span", null, (_.findWhere(schema.options, {
-              val: model.get(key)
-            }).label));
-          }
-          break;
-        case "checkbox":
-          if (isEdit) {
-            content = React.createElement("input", {
-              "style": {
-                height: 32,
-                marginTop: 0
-              },
-              "className": "form-control",
-              "type": "checkbox",
-              "bsSize": "small",
-              "checked": model.get(key) === "1",
-              "onChange": this.onCellValueChange.bind(this, model, key),
-              "onBlur": this.onCellEndEdit.bind(this, model, key),
-              "autoFocus": "true"
-            });
-          } else if (model.get(key) === "1") {
+        }).call(this);
+      } else {
+        content = React.createElement("span", null, model.get(key));
+        if (schema.type.toLowerCase() === "checkbox") {
+          if (model.get(key) === "1") {
             content = React.createElement("span", {
               "className": "glyphicon glyphicon-ok"
             });
-          }
-          break;
-        case "datetime":
-          if (isEdit) {
-            content = React.createElement("div", {
-              "className": "input-group input-append date form_datetime"
-            }, React.createElement("input", {
-              "ref": ref,
-              "style": {
-                height: 32
-              },
-              "className": "form-control dtpControl_" + key,
-              "autoFocus": "true",
-              "data-cid": model.cid,
-              "value": model.get(key),
-              "type": "text",
-              "onChange": this.onCellValueChange.bind(this, model, key),
-              "readOnly": "readonly"
-            }), React.createElement("span", {
-              "className": "input-group-addon add-on",
-              "onClick": this.onCellEndEdit.bind(this, model, key)
-            }, React.createElement("i", {
-              "className": "glyphicon glyphicon-remove"
-            })));
-            if (((ref5 = this.state.error) != null ? ref5.model : void 0) === model && this.state.error.key === key) {
-              error = React.createElement(Overlay, {
-                "show": true,
-                "target": ((function(_this) {
-                  return function() {
-                    return ReactDOM.findDOMNode(_this.refs[ref]);
-                  };
-                })(this)),
-                "placement": "right"
-              }, React.createElement(Popover, null, this.state.error.msg));
-            }
           } else {
-            content = React.createElement("span", null, model.get(key));
+            content = React.createElement("span", null);
           }
-          break;
-        default:
-          content = React.createElement("span", null, model.get(key));
+        } else if (schema.type.toLowerCase() === "select") {
+          content = React.createElement("span", null, (_.findWhere(schema.options, {
+            val: model.get(key)
+          }).label));
+        }
       }
-      if (error) {
+      if (((ref3 = this.state.error) != null ? ref3.model : void 0) === model && this.state.error.key === key) {
+        error = React.createElement(Overlay, {
+          "show": true,
+          "target": ((function(_this) {
+            return function() {
+              return ReactDOM.findDOMNode(_this.refs[ref]);
+            };
+          })(this)),
+          "placement": "right"
+        }, React.createElement(Popover, null, this.state.error.msg));
         content = [content, error];
       }
       return content;
+    },
+    getModalFieldContent: function(model, key) {
+      var opt, options, schema, type;
+      schema = model.schema[key];
+      type = schema.type.toLowerCase();
+      switch (type) {
+        case "text":
+          return React.createElement(Input, {
+            "type": "text",
+            "addonBefore": schema.title,
+            "value": model.get(key)
+          });
+        case "select":
+          return React.createElement(Input, {
+            "type": "select",
+            "addonBefore": schema.title,
+            "value": model.get(key)
+          }, (options = (function() {
+            var i, len, ref1, results;
+            ref1 = schema.options;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              opt = ref1[i];
+              results.push(React.createElement("option", {
+                "value": opt.val
+              }, opt.label));
+            }
+            return results;
+          })()));
+        case "datetime":
+          return React.createElement(Input, {
+            "type": "text",
+            "disabled": true,
+            "addonBefore": schema.title,
+            "buttonAfter": React.createElement(Button, null, React.createElement(Glyphicon, {
+              "glyph": "remove"
+            })),
+            "value": model.get(key)
+          });
+        case "checkbox":
+          return React.createElement(Input, {
+            "type": "checkbox",
+            "bsSize": "small",
+            "label": schema.title,
+            "value": model.get(key)
+          });
+        default:
+          return React.createElement(Input, {
+            "type": "text",
+            "addonBefore": schema.title,
+            "value": model.get(key)
+          });
+      }
     },
     onCellValueChange: function(model, key, e) {
       var error, value;
@@ -252,7 +295,6 @@
         });
         dtpControls.on("changeDate", (function(k) {
           return function(e) {
-            debugger;
             var $el, model, ref1;
             $el = $(e.currentTarget);
             model = that.props.collection.get($el.data("cid"));
@@ -276,49 +318,34 @@
         }
       }
       return results;
-    }
-  };
-
-  ReactTable = React.createClass({
-    mixins: [CreateCellContentMixin],
-    getInitialState: function() {
-      return {
-        activePage: 1,
-        editCellIsValidate: true,
-        showModal: false
-      };
     },
-    componentWillMount: function() {},
-    componentDidMount: function() {
-      this.getColumnsWidth();
-      return this.createDateTimePickerControl();
-    },
-    componentWillUpdate: function(nextProps, nextState) {
-      var el, k, results, schema, v;
-      el = $(this.getDOMNode());
-      schema = this.props.collection.model.prototype.schema;
-      results = [];
-      for (k in schema) {
-        v = schema[k];
-        if (v.type.toLowerCase() === "datetime") {
-          results.push(el.find(".dtpControl_" + k).datetimepicker("remove"));
-        }
+    getButtonProps: function(buttonInfo) {
+      debugger;
+      var btnProps, ref1, ref2, that;
+      that = this;
+      btnProps = {};
+      switch (buttonInfo.command) {
+        case "detail":
+          btnProps.clickHandle = this.detailButtonHandle;
+          btnProps.bsStyle = "info";
+          btnProps.icon = "list";
+          break;
+        case "edit":
+          btnProps.clickHandle = this.editButtonHandle;
+          btnProps.bsStyle = "primary";
+          btnProps.icon = "edit";
+          break;
+        case "delete":
+          btnProps.clickHandle = this.deleteButtonHandle;
+          btnProps.bsStyle = "danger";
+          btnProps.icon = "trash";
+          break;
+        default:
+          btnProps.clickHandle = buttonInfo.onclick;
+          btnProps.bsStyle = (ref1 = buttonInfo.btnClass) != null ? ref1 : "info";
+          btnProps.icon = (ref2 = buttonInfo.iconClass) != null ? ref2 : "list";
       }
-      return results;
-    },
-    componentDidUpdate: function() {
-      this.getColumnsWidth();
-      return this.createDateTimePickerControl();
-    },
-    showModal: function() {
-      return this.setState({
-        showModal: true
-      });
-    },
-    hideModal: function() {
-      return this.setState({
-        showModal: false
-      });
+      return btnProps;
     },
     getColumnsWidth: function() {
       var $el, cellWidths, k, ref1, v;
@@ -330,36 +357,6 @@
         cellWidths[k] = $el.outerWidth();
       }
       return this.cellWidths = cellWidths;
-    },
-    cellClick: function(model, key, e) {
-      this.setState({
-        selectedRow: model
-      });
-      if (this.props.readonly !== true && model.schema[key].readonly !== true && model.schema[key].edit !== true && this.state.editCellIsValidate === true) {
-        return this.setState({
-          editCell: {
-            model: model,
-            key: key
-          }
-        });
-      }
-    },
-    sort: function(name) {
-      var dir;
-      if (this.state.sortField === name && this.state.sortDir === "asc") {
-        dir = "desc";
-      } else {
-        dir = "asc";
-      }
-      return this.setState({
-        sortField: name,
-        sortDir: dir
-      });
-    },
-    pageChange: function(event, selectedEvent) {
-      return this.setState({
-        activePage: selectedEvent.eventKey
-      });
     },
     getSortCollection: function() {
       var getSortValue, schema, sortModels, that;
@@ -383,62 +380,77 @@
         }
       }
       return sortModels;
+    }
+  };
+
+  ReactTable = React.createClass({
+    mixins: [CreateCellContentMixin],
+    getInitialState: function() {
+      return {
+        activePage: 1,
+        editCellIsValidate: true,
+        showModal: false
+      };
+    },
+    componentWillMount: function() {},
+    componentDidMount: function() {},
+    componentWillUpdate: function(nextProps, nextState) {},
+    componentDidUpdate: function() {},
+    showModalHandle: function() {
+      return this.setState({
+        showModal: true
+      });
+    },
+    hideModalHandle: function() {
+      return this.setState({
+        showModal: false
+      });
+    },
+    cellClickHandle: function(model, key, e) {
+      this.setState({
+        selectedRow: model
+      });
+      if (this.props.readonly !== true && model.schema[key].readonly !== true && model.schema[key].edit !== true && this.state.editCellIsValidate === true) {
+        return this.setState({
+          editCell: {
+            model: model,
+            key: key
+          }
+        });
+      }
+    },
+    columnHeaderClickHandle: function(name) {
+      var dir;
+      if (this.state.sortField === name && this.state.sortDir === "asc") {
+        dir = "desc";
+      } else {
+        dir = "asc";
+      }
+      return this.setState({
+        sortField: name,
+        sortDir: dir
+      });
+    },
+    pageChangeHandle: function(event, selectedEvent) {
+      return this.setState({
+        activePage: selectedEvent.eventKey
+      });
+    },
+    detailButtonHandle: function(model, e) {
+      return alert("");
+    },
+    editButtonHandle: function(model, e) {},
+    addButtonHandle: function(model, e) {},
+    deleteButtonHandle: function(model, e) {},
+    selectButtonClick: function(model, e, eventKey) {
+      return alert(eventKey);
     },
     render: function() {
-      var pageCollection, pageCount, pageRecordLength, ref1, renderRowButton, sortCollection;
+      var pageCollection, pageCount, pageRecordLength, ref1, sortCollection;
       pageRecordLength = (ref1 = this.props.pageRecordLength) != null ? ref1 : 10;
       pageCount = Math.ceil(this.props.collection.length / 10);
       sortCollection = this.getSortCollection();
       pageCollection = sortCollection.slice((this.state.activePage - 1) * 10, +(this.state.activePage * 10 - 1) + 1 || 9e9);
-      renderRowButton = (function(_this) {
-        return function() {
-          return React.createElement(ButtonGroup, {
-            "bsSize": "xsmall"
-          }, (function() {
-            var btnInfo, i, j, len, len1, ref2, ref3, ref4, ref5, results, results1;
-            if (((ref2 = _this.props.rowButtons) != null ? ref2.length : void 0) <= 3) {
-              ref3 = _this.props.rowButtons.slice(0, 3);
-              results = [];
-              for (i = 0, len = ref3.length; i < len; i++) {
-                btnInfo = ref3[i];
-                if (btnInfo != null) {
-                  results.push(React.createElement(Button, {
-                    "onClick": btnInfo.onclick
-                  }, btnInfo.text));
-                }
-              }
-              return results;
-            } else if (((ref4 = _this.props.rowButtons) != null ? ref4.length : void 0) > 3) {
-              ref5 = _this.props.rowButtons.slice(0, 2);
-              results1 = [];
-              for (j = 0, len1 = ref5.length; j < len1; j++) {
-                btnInfo = ref5[j];
-                results1.push(React.createElement(Button, {
-                  "onClick": btnInfo.onclick
-                }, btnInfo.text));
-              }
-              return results1;
-            }
-          })(), (function() {
-            var ref2;
-            if (((ref2 = _this.props.rowButtons) != null ? ref2.length : void 0) > 3) {
-              return React.createElement(SplitButton, {
-                "bsSize": "xsmall",
-                "title": _this.props.rowButtons[2].text
-              }, (function() {
-                var btnInfo, i, len, ref3, results;
-                ref3 = _this.props.rowButtons.slice(3);
-                results = [];
-                for (i = 0, len = ref3.length; i < len; i++) {
-                  btnInfo = ref3[i];
-                  results.push(React.createElement(MenuItem, null, btnInfo.text));
-                }
-                return results;
-              })());
-            }
-          })());
-        };
-      })(this);
       return React.createElement("div", {
         "className": "panel panel-default"
       }, React.createElement("div", {
@@ -457,10 +469,13 @@
           for (i = 0, len = ref2.length; i < len; i++) {
             btnInfo = ref2[i];
             results.push(React.createElement(Button, {
-              "bsStyle": btnInfo.style,
+              "bsStyle": "primary",
+              "bsSize": "small",
               "onClick": btnInfo.onClick,
-              "onClick": _this.showModal
-            }, btnInfo.text));
+              "onClick": _this.showModalHandle
+            }, React.createElement(Glyphicon, {
+              "glyph": "plus"
+            }), " " + btnInfo.text));
           }
           return results;
         };
@@ -484,7 +499,7 @@
               v = ref2[k];
               results.push(React.createElement("th", {
                 "ref": "th_" + k,
-                "onClick": this.sort.bind(this, k)
+                "onClick": this.columnHeaderClickHandle.bind(this, k)
               }, v.title, (function(_this) {
                 return function() {
                   if (_this.state.sortField === k) {
@@ -507,7 +522,7 @@
             ths.push(React.createElement("th", {
               "style": {
                 width: 160,
-                minWidth: 160
+                minWidth: 200
               }
             }));
           }
@@ -542,11 +557,75 @@
                 }
                 results1.push(React.createElement("td", {
                   "style": style,
-                  "onClick": this.cellClick.bind(this, model, k)
+                  "onClick": this.cellClickHandle.bind(this, model, k)
                 }, this.getCellContent(model, k)));
               }
               return results1;
-            }).call(_this), React.createElement("td", null, (_this.props.rowButtons != null ? renderRowButton() : null))));
+            }).call(_this), React.createElement("td", null, React.createElement(ButtonGroup, {
+              "bsSize": "xsmall"
+            }, (function() {
+              var btnInfo, btnProps, j, len1, ref2, ref3, ref4, result, tmp1;
+              if (((ref2 = _this.props.rowButtons) != null ? ref2.length : void 0) <= 3) {
+                ref3 = _this.props.rowButtons.slice(0, 3);
+                for (j = 0, len1 = ref3.length; j < len1; j++) {
+                  btnInfo = ref3[j];
+                  if (!(btnInfo != null)) {
+                    continue;
+                  }
+                  btnProps = _this.getButtonProps(btnInfo);
+                  React.createElement(Button, {
+                    "onClick": btnProps.clickHandle.bind(_this, model),
+                    "bsStyle": btnProps.bsStyle
+                  }, React.createElement(Glyphicon, {
+                    "glyph": btnProps.icon
+                  }), " " + btnInfo.text);
+                }
+              } else if (((ref4 = _this.props.rowButtons) != null ? ref4.length : void 0) > 3) {
+                result = (function() {
+                  var l, len2, ref5, ref6, results1;
+                  ref5 = this.props.rowButtons.slice(0, 2);
+                  results1 = [];
+                  for (l = 0, len2 = ref5.length; l < len2; l++) {
+                    btnInfo = ref5[l];
+                    btnProps = this.getButtonProps(btnInfo);
+                    results1.push(React.createElement(Button, {
+                      "onClick": (ref6 = btnProps.clickHandle) != null ? ref6.bind(this, model) : void 0,
+                      "bsStyle": btnProps.bsStyle
+                    }, React.createElement(Glyphicon, {
+                      "glyph": btnProps.icon
+                    }), " " + btnInfo.text));
+                  }
+                  return results1;
+                }).call(_this);
+                btnProps = _this.getButtonProps(_this.props.rowButtons[2]);
+                tmp1 = React.createElement(Dropdown, {
+                  "id": "dropdown-custom-2",
+                  "bsSize": "xsmall",
+                  "onSelect": _this.selectButtonClick.bind(_this, model)
+                }, React.createElement(Button, {
+                  "onClick": btnProps.clickHandle.bind(_this, model),
+                  "bsStyle": btnProps.bsStyle
+                }, React.createElement(Glyphicon, {
+                  "glyph": btnProps.icon
+                }), " " + _this.props.rowButtons[2].text), React.createElement(Dropdown.Toggle, {
+                  "bsStyle": "default"
+                }), React.createElement(Dropdown.Menu, null, (function() {
+                  var l, len2, ref5, results1;
+                  ref5 = _this.props.rowButtons.slice(3);
+                  results1 = [];
+                  for (l = 0, len2 = ref5.length; l < len2; l++) {
+                    btnInfo = ref5[l];
+                    btnProps = _this.getButtonProps(btnInfo);
+                    results1.push(React.createElement(MenuItem, {
+                      "eventKey": btnInfo.command
+                    }, btnInfo.text));
+                  }
+                  return results1;
+                })()));
+              }
+              result.push(tmp1);
+              return result;
+            })()))));
           }
           return results;
         };
@@ -559,10 +638,10 @@
         "items": pageCount,
         "maxButtons": pageRecordLength,
         "activePage": this.state.activePage,
-        "onSelect": this.pageChange
+        "onSelect": this.pageChangeHandle
       })), React.createElement(Modal, {
         "show": this.state.showModal,
-        "onHide": this.hideModal,
+        "onHide": this.hideModalHandle,
         "bsSize": "large"
       }, React.createElement(Modal.Header, {
         "closeButton": true
@@ -583,11 +662,7 @@
                 "xs": 12.,
                 "sm": 6.,
                 "md": 6.
-              }, React.createElement(Input, {
-                "type": "text",
-                "addonBefore": v.title,
-                "value": model.get(k)
-              })));
+              }, _this.getModalFieldContent(model, k)));
             }
             return results;
           }
@@ -596,7 +671,7 @@
         "bsStyle": "primary"
       }, "\u4fdd\u5b58"), React.createElement(Button, {
         "bsStyle": "default",
-        "onClick": this.hideModal
+        "onClick": this.hideModalHandle
       }, "\u53d6\u6d88"))));
     }
   });

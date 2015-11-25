@@ -54,7 +54,7 @@ User = Backbone.Model.extend
       ]
     sb:
       type:"Checkbox"
-      title:"标志"
+      title:"工作标志"
       width:80
 
 Users = Backbone.Collection.extend
