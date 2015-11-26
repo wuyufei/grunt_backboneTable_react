@@ -122,7 +122,7 @@ table = new BackboneTable
       text:"详情"
       command:"detail"
       onclick:(model,e)->
-        e.preventDefault()
+        #e.preventDefault()
     }
     {
       text:"编辑"

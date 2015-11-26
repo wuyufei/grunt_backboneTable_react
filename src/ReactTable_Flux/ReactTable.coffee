@@ -12,8 +12,22 @@ window.BackboneTable = BackboneTable = Backbone.View.extend
     model.set key,value,validate:true,silent:true
     model.off "invalid",invalidHandle
     if error?[key]? then error else null
+  sort:(field,dir)->
+
+  getNewModel:()->
+    return new @collection.model()
+  deleteModel:(model)->
+    model.destroy()
+  saveModel:(model)->
+    that = @
+    isNew = model.isNew()
+    model.save
+      success:->
+        that.collection.add(model) if isNew
+        that.render()
+      error:->
   render:->
-    ReactDOM.render <ReactTable {...@options } setModel={@setModel}/>,@el
+    ReactDOM.render <ReactTable {...@options } setModel={@setModel} deleteModel={@deleteModel}/>,@el
 
 CreateCellContentMixin =
   componentWillUpdate:(nextProps,nextState)->
@@ -33,6 +47,8 @@ CreateCellContentMixin =
       isEdit = false
     else if schema.edit is true or (model is @state.editCell?.model and key is @state.editCell?.key)
       isEdit = true
+    else
+      isEdit = false
 
     if isEdit
       content = switch schema.type.toLowerCase()
@@ -103,20 +119,18 @@ CreateCellContentMixin =
       if @state.editCell?.key is k
         dtpControls.datetimepicker("show")
   getButtonProps:(buttonInfo)->
-    debugger
-    that = @
     btnProps = {}
     switch buttonInfo.command
         when "detail"
-          btnProps.clickHandle = @detailButtonHandle
+          btnProps.clickHandle = @buttonClickHandle.bind(@,"detail")
           btnProps.bsStyle = "info"
           btnProps.icon="list"
         when "edit"
-          btnProps.clickHandle = @editButtonHandle
+          btnProps.clickHandle = @buttonClickHandle.bind(@,"edit")
           btnProps.bsStyle = "primary"
           btnProps.icon="edit"
         when "delete"
-          btnProps.clickHandle = @deleteButtonHandle
+          btnProps.clickHandle = @buttonClickHandle.bind(@,"delete")
           btnProps.bsStyle = "danger"
           btnProps.icon="trash"
         else
@@ -160,6 +174,10 @@ ReactTable = React.createClass
     @setState showModal:true
   hideModalHandle:->
     @setState showModal:false
+  hideConfirmModal:->
+    @setState showConfirmModal:false
+  deleteConfirmButtonClickHandle:->
+    alert "删除"
   cellClickHandle:(model,key,e)->
     @setState selectedRow:model
     if @props.readonly isnt true and model.schema[key].readonly isnt true and model.schema[key].edit isnt true and @state.editCellIsValidate is true
@@ -170,11 +188,16 @@ ReactTable = React.createClass
   pageChangeHandle:(event,selectedEvent)->
     @setState activePage:selectedEvent.eventKey
   detailButtonHandle:(model,e)->
-    alert("")
-  editButtonHandle:(model,e)->
-  addButtonHandle:(model,e)->
-  deleteButtonHandle:(model,e)->
-  selectButtonClick:(model,e,eventKey)->
+     _.findWhere(@props.rowButtons,command:"detail")?.onclick?(model,e)
+     unless e.isDefaultPrevented() then @setState selectedRow:model,showModal:true,action:"detail"
+  buttonClickHandle:(command,model,e)->
+    _.findWhere(@props.rowButtons,command:command)?.onclick?(model,e)
+    unless e.isDefaultPrevented()
+      if command is "delete"
+        @setState selectedRow:model,showConfirmModal:true,action:command
+      else
+       @setState selectedRow:model,showModal:true,action:command
+  selectButtonClick:(model,e,eventKey)->#下拉按钮click处理程序都在这
     alert eventKey
   render:->
     pageRecordLength = @props.pageRecordLength ? 10
@@ -284,5 +307,51 @@ ReactTable = React.createClass
                     <Button bsStyle="default" onClick={@hideModalHandle}>取消</Button>
           </Modal.Footer>
         </Modal>
+        <Modal show={@state.showConfirmModal} onHide={@hideConfirmModal}  bsSize="sm">
+          <Modal.Header closeButton>
+            <Modal.Title>提示</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <h4 className="text-center">确认删除吗</h4>
+          </Modal.Body>
+          <Modal.Footer>
+                    <Button bsStyle="primary" onClick={@deleteConfirmButtonClickHandle}>确定</Button>
+                    <Button bsStyle="default" onClick={@hideConfirmModal}>取消</Button>
+          </Modal.Footer>
+        </Modal>
     </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 console.log ""

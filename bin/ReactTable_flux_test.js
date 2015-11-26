@@ -138,9 +138,7 @@
       {
         text: "详情",
         command: "detail",
-        onclick: function(model, e) {
-          return e.preventDefault();
-        }
+        onclick: function(model, e) {}
       }, {
         text: "编辑",
         command: "edit",

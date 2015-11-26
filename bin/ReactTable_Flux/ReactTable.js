@@ -28,9 +28,31 @@
         return null;
       }
     },
+    sort: function(field, dir) {},
+    getNewModel: function() {
+      return new this.collection.model();
+    },
+    deleteModel: function(model) {
+      return model.destroy();
+    },
+    saveModel: function(model) {
+      var isNew, that;
+      that = this;
+      isNew = model.isNew();
+      return model.save({
+        success: function() {
+          if (isNew) {
+            that.collection.add(model);
+          }
+          return that.render();
+        },
+        error: function() {}
+      });
+    },
     render: function() {
       return ReactDOM.render(React.createElement(ReactTable, React.__spread({}, this.options, {
-        "setModel": this.setModel
+        "setModel": this.setModel,
+        "deleteModel": this.deleteModel
       })), this.el);
     }
   });
@@ -65,6 +87,8 @@
         isEdit = false;
       } else if (schema.edit === true || (model === ((ref1 = this.state.editCell) != null ? ref1.model : void 0) && key === ((ref2 = this.state.editCell) != null ? ref2.key : void 0))) {
         isEdit = true;
+      } else {
+        isEdit = false;
       }
       if (isEdit) {
         content = (function() {
@@ -320,23 +344,21 @@
       return results;
     },
     getButtonProps: function(buttonInfo) {
-      debugger;
-      var btnProps, ref1, ref2, that;
-      that = this;
+      var btnProps, ref1, ref2;
       btnProps = {};
       switch (buttonInfo.command) {
         case "detail":
-          btnProps.clickHandle = this.detailButtonHandle;
+          btnProps.clickHandle = this.buttonClickHandle.bind(this, "detail");
           btnProps.bsStyle = "info";
           btnProps.icon = "list";
           break;
         case "edit":
-          btnProps.clickHandle = this.editButtonHandle;
+          btnProps.clickHandle = this.buttonClickHandle.bind(this, "edit");
           btnProps.bsStyle = "primary";
           btnProps.icon = "edit";
           break;
         case "delete":
-          btnProps.clickHandle = this.deleteButtonHandle;
+          btnProps.clickHandle = this.buttonClickHandle.bind(this, "delete");
           btnProps.bsStyle = "danger";
           btnProps.icon = "trash";
           break;
@@ -406,6 +428,14 @@
         showModal: false
       });
     },
+    hideConfirmModal: function() {
+      return this.setState({
+        showConfirmModal: false
+      });
+    },
+    deleteConfirmButtonClickHandle: function() {
+      return alert("删除");
+    },
     cellClickHandle: function(model, key, e) {
       this.setState({
         selectedRow: model
@@ -437,11 +467,47 @@
       });
     },
     detailButtonHandle: function(model, e) {
-      return alert("");
+      var ref1;
+      if ((ref1 = _.findWhere(this.props.rowButtons, {
+        command: "detail"
+      })) != null) {
+        if (typeof ref1.onclick === "function") {
+          ref1.onclick(model, e);
+        }
+      }
+      if (!e.isDefaultPrevented()) {
+        return this.setState({
+          selectedRow: model,
+          showModal: true,
+          action: "detail"
+        });
+      }
     },
-    editButtonHandle: function(model, e) {},
-    addButtonHandle: function(model, e) {},
-    deleteButtonHandle: function(model, e) {},
+    buttonClickHandle: function(command, model, e) {
+      var ref1;
+      if ((ref1 = _.findWhere(this.props.rowButtons, {
+        command: command
+      })) != null) {
+        if (typeof ref1.onclick === "function") {
+          ref1.onclick(model, e);
+        }
+      }
+      if (!e.isDefaultPrevented()) {
+        if (command === "delete") {
+          return this.setState({
+            selectedRow: model,
+            showConfirmModal: true,
+            action: command
+          });
+        } else {
+          return this.setState({
+            selectedRow: model,
+            showModal: true,
+            action: command
+          });
+        }
+      }
+    },
     selectButtonClick: function(model, e, eventKey) {
       return alert(eventKey);
     },
@@ -672,6 +738,20 @@
       }, "\u4fdd\u5b58"), React.createElement(Button, {
         "bsStyle": "default",
         "onClick": this.hideModalHandle
+      }, "\u53d6\u6d88"))), React.createElement(Modal, {
+        "show": this.state.showConfirmModal,
+        "onHide": this.hideConfirmModal,
+        "bsSize": "sm"
+      }, React.createElement(Modal.Header, {
+        "closeButton": true
+      }, React.createElement(Modal.Title, null, "\u63d0\u793a")), React.createElement(Modal.Body, null, React.createElement("h4", {
+        "className": "text-center"
+      }, "\u786e\u8ba4\u5220\u9664\u5417")), React.createElement(Modal.Footer, null, React.createElement(Button, {
+        "bsStyle": "primary",
+        "onClick": this.deleteConfirmButtonClickHandle
+      }, "\u786e\u5b9a"), React.createElement(Button, {
+        "bsStyle": "default",
+        "onClick": this.hideConfirmModal
       }, "\u53d6\u6d88"))));
     }
   });
