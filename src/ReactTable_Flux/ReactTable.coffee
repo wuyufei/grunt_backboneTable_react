@@ -7,13 +7,22 @@ window.BackboneTable = BackboneTable = Backbone.View.extend
     error = null
     invalidHandle = (model,er)->
       error = er
-      model.set key,value,silent:true
     model.on "invalid",invalidHandle
-    model.set key,value,validate:true,silent:true
+    model.set key,value,validate:true
     model.off "invalid",invalidHandle
     if error?[key]? then error else null
-  sort:(field,dir)->
-
+  getSortList:(field,dir)->
+    that = @
+    sortModels = _.clone @collection.models
+    schema = @collection.model::schema
+    if field
+      getSortValue = schema[field].sortValue
+      sortModels.sort (a,b)->
+        a = getSortValue?(a) ? a.get(field)
+        b = getSortValue?(b) ? b.get(field)
+        if _.isString(a) then return a.localeCompare(b); else return a-b
+      sortModels.reverse() if dir is "desc"
+    sortModels
   getNewModel:()->
     return new @collection.model()
   deleteModel:(model)->
@@ -27,7 +36,7 @@ window.BackboneTable = BackboneTable = Backbone.View.extend
         that.render()
       error:->
   render:->
-    ReactDOM.render <ReactTable {...@options } setModel={@setModel} deleteModel={@deleteModel}/>,@el
+    ReactDOM.render <ReactTable {...@options } setModel={@setModel} deleteModel={@deleteModel} getSortList={@getSortList}/>,@el
 
 CreateCellContentMixin =
   componentWillUpdate:(nextProps,nextState)->
@@ -52,13 +61,13 @@ CreateCellContentMixin =
 
     if isEdit
       content = switch schema.type.toLowerCase()
-                  when "text" then <input style={{height:32}} ref={ref} className="form-control" type="text" bsSize="small" value={model.get(key)} onChange={@onCellValueChange.bind(@,model,key)} onBlur={@onCellEndEdit.bind(@,model,key)} autoFocus="true"/>
-                  when "select" then  <select style={{height:32}} ref={ref} className="form-control" bsSize="small" value={model.get(key)} onChange={@onCellValueChange.bind(@,model,key)} onBlur={@onCellEndEdit.bind(@,model,key)} autoFocus="true">
-                                        {<option value={opt.val}>{opt.label}</option> for opt in schema.options}
+                  when "text" then <input style={{height:32}} ref={ref} className="form-control" type="text" bsSize="small" value={@state.editCell.value} onChange={@onCellValueChange.bind(@,model,key)} onBlur={@onCellEndEdit.bind(@,model,key)} autoFocus="true"/>
+                  when "select" then  <select style={{height:32}} ref={ref} className="form-control" bsSize="small" value={@state.editCell.value} onChange={@onCellValueChange.bind(@,model,key)} onBlur={@onCellEndEdit.bind(@,model,key)} autoFocus="true">
+                                        {<option value={opt.val ? " "}>{opt.label}</option> for opt in schema.options}
                                       </select>
-                  when "checkbox" then <input style={{height:32,marginTop:0}} className="form-control" type="checkbox" bsSize="small" checked={model.get(key) is "1"} onChange={@onCellValueChange.bind(@,model,key)} onBlur={@onCellEndEdit.bind(@,model,key)} autoFocus="true"/>
+                  when "checkbox" then <input style={{height:32,marginTop:0}} className="form-control" type="checkbox" bsSize="small" checked={@state.editCell.value is "1"} onChange={@onCellValueChange.bind(@,model,key)} onBlur={@onCellEndEdit.bind(@,model,key)} autoFocus="true"/>
                   when "datetime" then <div className="input-group input-append date form_datetime" >
-                                           <input ref={ref} style={{height:32}} className="form-control dtpControl_#{key}" autoFocus="true" data-cid={model.cid} value={model.get(key)}  type="text" onChange={@onCellValueChange.bind(@,model,key)}  readOnly="readonly"/>
+                                           <input ref={ref} style={{height:32}} className="form-control dtpControl_#{key}" autoFocus="true" data-cid={model.cid} value={@state.editCell.value}  type="text" onChange={@onCellValueChange.bind(@,model,key)}  readOnly="readonly"/>
                                            <span className="input-group-addon add-on" onClick={@onCellEndEdit.bind(@,model,key)}><i  className="glyphicon glyphicon-remove" ></i></span>
                                       </div>
     else
@@ -74,27 +83,54 @@ CreateCellContentMixin =
       content = [content,error]
     content
   getModalFieldContent:(model,key)->
+    ref = "modalForm" +key+model.cid
     schema = model.schema[key]
     type = schema.type.toLowerCase()
-    switch type
-      when "text" then <Input type="text" addonBefore={schema.title} value={model.get(key)}/>
-      when "select" then <Input type="select" addonBefore={schema.title} value={model.get(key)}>
-                            {options = for opt in schema.options
-                              <option value={opt.val}>{opt.label}</option>}
-                        </Input>
-      when "datetime"then <Input type="text" disabled=true addonBefore={schema.title} buttonAfter={<Button><Glyphicon glyph="remove" /></Button>} value={model.get(key)} />
-      when "checkbox" then <Input type="checkbox" bsSize="small" label={schema.title} value={model.get(key)}/>
-      else  <Input type="text" addonBefore={schema.title} value={model.get(key)}/>
+    content =
+      switch type
+        when "text" then <Input type="text" ref={ref} addonBefore={schema.title} value={@state.modalFormValues[key]}/>
+        when "select" then <Input type="select" ref={ref} addonBefore={schema.title} value={@state.modalFormValues[key]}>
+                              {options = for opt in schema.options
+                                <option value={opt.val}>{opt.label}</option>}
+                          </Input>
+        when "datetime"then <Input type="text" ref={ref} disabled=true addonBefore={schema.title} buttonAfter={<Button><Glyphicon glyph="remove" /></Button>} value={@state.modalFormValues[key]}/>
+        when "checkbox" then <Input type="checkbox" ref={ref} bsSize="small" label={schema.title} value={@state.modalFormValues[key]}/>
+        else  <Input type="text" addonBefore={schema.title} ref={ref} value={@state.modalFormValues[key]}/>
+
+    if @state.error?.model is model and @state.error.key is key
+      error = <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs[ref])} placement="right">
+                    <Popover>{@state.error.msg}</Popover>
+              </Overlay>
+      content = [content,error]
+    content
   onCellValueChange:(model,key,e)->
     value = if model.schema[key].type.toLowerCase() is "checkbox" then (if e.target.checked is true then "1" else "0") else e.target.value
     error = @props.setModel(model,key,value)
-    if error then @setState error:model:model,key:key,msg:error[key] else @setState error:null
+    if error
+      @setState
+        error:
+          model:model
+          key:key
+          msg:error[key]
+        editCell:
+          model:model
+          key:key
+          value:value
+    else
+      @setState
+        error:
+          null
+        editCell:
+          model:model
+          key:key
+          value:value
   onCellEndEdit:(model,key,e)->
     value = if model.schema[key].type.toLowerCase() is "checkbox" then (if e.target.checked is true then "1" else "0") else e.target.value
     error = @props.setModel(model,key,value)
     if error
        @setState
           error : model:model,key:key,msg:error[key]
+          editCell:model:model,key:key,value:value
           editCellIsValidate:false
     else
       @setState error:null,editCellIsValidate:true,editCell:null
@@ -162,9 +198,26 @@ ReactTable = React.createClass
   mixins:[CreateCellContentMixin]
   getInitialState:->
     activePage:1
-    editCellIsValidate:true
+    selectedRow:null
+
     showModal:false
+    showConfirmModal:false
+
+    sortField:@props.sortField ? null
+    sortDir:"asc"
+    editCell:
+      model:null
+      key:null
+      error:null
+    modalFormValues:null
+    editCellIsValidate:true
+    error:
+      model:null
+      key:null
+      msg:null
   componentWillMount:->
+    @sortList = @props.getSortList(@state.sortField,@state.sortDir)
+    @modalFormValues = {}
   componentDidMount:->
   componentWillUpdate:(nextProps,nextState)->
   componentDidUpdate:->
@@ -177,14 +230,33 @@ ReactTable = React.createClass
   hideConfirmModal:->
     @setState showConfirmModal:false
   deleteConfirmButtonClickHandle:->
-    alert "删除"
+    @props.deleteModel @state.selectedRow
+  saveButtonHandle:->
+    #取值验证
+    debugger
+    model = @state.selectedRow
+    for key,v of @props.collection.model::schema
+      ref =  "modalForm" + key + @state.selectedRow.cid
+      target = ReactDOM.findDOMNode(@refs[ref])
+      value = if model.schema[key].type.toLowerCase() is "checkbox" then (if target.checked is true then "1" else "0") else target.value
+      error = @props.setModel(model,key,value)
+      if error
+         @setState error:model:model,key:key,msg:error[key]
+         return
+
+      alert("success")
   cellClickHandle:(model,key,e)->
-    @setState selectedRow:model
+    if @setState.selectedRow isnt model
+      @setState selectedRow:model
+      @setState modalFormValues:_.clone model.attributes
     if @props.readonly isnt true and model.schema[key].readonly isnt true and model.schema[key].edit isnt true and @state.editCellIsValidate is true
-      @setState editCell:{model:model,key:key}
+      unless @state.editCell?.model is model and @state.editCell.key is key
+        @setState editCell:{model:model,key:key,value:model.get(key)}
+
   columnHeaderClickHandle:(name)->
-    if @state.sortField is name and @state.sortDir is "asc" then dir = "desc" else dir = "asc"
+    dir = if @state.sortField is name and @state.sortDir is "asc" then dir = "desc" else dir = "asc"
     @setState sortField:name,sortDir:dir
+    @sortList =  @props.getSortList(name,dir)
   pageChangeHandle:(event,selectedEvent)->
     @setState activePage:selectedEvent.eventKey
   detailButtonHandle:(model,e)->
@@ -202,7 +274,7 @@ ReactTable = React.createClass
   render:->
     pageRecordLength = @props.pageRecordLength ? 10
     pageCount = Math.ceil(@props.collection.length/10)
-    sortCollection = @getSortCollection()
+    sortCollection = @sortList
     pageCollection = sortCollection[(@state.activePage-1)*10..(@state.activePage)*10-1]
     <div className="panel panel-default">
         <div className="panel-heading clearfix">
@@ -303,11 +375,11 @@ ReactTable = React.createClass
             </Grid>
           </Modal.Body>
           <Modal.Footer>
-                    <Button bsStyle="primary">保存</Button>
+                    <Button bsStyle="primary" onClick={@saveButtonHandle}>保存</Button>
                     <Button bsStyle="default" onClick={@hideModalHandle}>取消</Button>
           </Modal.Footer>
         </Modal>
-        <Modal show={@state.showConfirmModal} onHide={@hideConfirmModal}  bsSize="sm">
+        <Modal show={@state.showConfirmModal} onHide={@hideConfirmModal} bsSize="sm">
           <Modal.Header closeButton>
             <Modal.Title>提示</Modal.Title>
           </Modal.Header>
