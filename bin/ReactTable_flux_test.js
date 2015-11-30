@@ -52,11 +52,6 @@
         title: "出生日期",
         format: "yyyy-mm-dd"
       },
-      updateDate: {
-        type: "datetime",
-        title: "升级日期",
-        format: "yyyy-mm-dd"
-      },
       education: {
         title: "学历",
         type: "Select",

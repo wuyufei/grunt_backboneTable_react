@@ -53,11 +53,11 @@
     deleteModel: function(model) {
       return model.destroy();
     },
-    saveModel: function(model) {
+    saveModel: function(model, props) {
       var isNew, that;
       that = this;
       isNew = model.isNew();
-      return model.save({
+      return model.save(props, {
         success: function() {
           if (isNew) {
             that.collection.add(model);
@@ -218,31 +218,38 @@
       return content;
     },
     getModalFieldContent: function(model, key) {
-      var content, error, opt, options, ref, ref1, schema, type;
+      var addonBefore, content, error, opt, options, ref, ref1, ref2, ref3, schema, type;
       ref = "modalForm" + key + model.cid;
       schema = model.schema[key];
       type = schema.type.toLowerCase();
+      if ((model != null ? (ref1 = model.validation) != null ? (ref2 = ref1[key]) != null ? ref2.required : void 0 : void 0 : void 0) === true) {
+        addonBefore = schema.title + "*";
+      } else {
+        addonBefore = schema.title;
+      }
       content = (function() {
         switch (type) {
           case "text":
             return React.createElement(Input, {
               "type": "text",
               "ref": ref,
-              "addonBefore": schema.title,
-              "value": this.state.modalFormValues[key]
+              "addonBefore": addonBefore,
+              "value": this.state.modalFormValues[key],
+              "onChange": this.onModalFieldValueChange.bind(this, model, key)
             });
           case "select":
             return React.createElement(Input, {
               "type": "select",
               "ref": ref,
               "addonBefore": schema.title,
-              "value": this.state.modalFormValues[key]
+              "value": this.state.modalFormValues[key],
+              "onChange": this.onModalFieldValueChange.bind(this, model, key)
             }, (options = (function() {
-              var i, len, ref1, results;
-              ref1 = schema.options;
+              var i, len, ref3, results;
+              ref3 = schema.options;
               results = [];
-              for (i = 0, len = ref1.length; i < len; i++) {
-                opt = ref1[i];
+              for (i = 0, len = ref3.length; i < len; i++) {
+                opt = ref3[i];
                 results.push(React.createElement("option", {
                   "value": opt.val
                 }, opt.label));
@@ -253,7 +260,9 @@
             return React.createElement(Input, {
               "type": "text",
               "ref": ref,
+              "data-cid": model.cid,
               "disabled": true,
+              "className": "dtpControl_" + key,
               "addonBefore": schema.title,
               "buttonAfter": React.createElement(Button, null, React.createElement(Glyphicon, {
                 "glyph": "remove"
@@ -266,18 +275,20 @@
               "ref": ref,
               "bsSize": "small",
               "label": schema.title,
-              "value": this.state.modalFormValues[key]
+              "checked": this.state.modalFormValues[key] === "1",
+              "onChange": this.onModalFieldValueChange.bind(this, model, key)
             });
           default:
             return React.createElement(Input, {
               "type": "text",
               "addonBefore": schema.title,
               "ref": ref,
-              "value": this.state.modalFormValues[key]
+              "value": this.state.modalFormValues[key],
+              "onChange": this.onModalFieldValueChange.bind(this, model, key)
             });
         }
       }).call(this);
-      if (((ref1 = this.state.error) != null ? ref1.model : void 0) === model && this.state.error.key === key) {
+      if (((ref3 = this.state.modalFormError) != null ? ref3[key] : void 0) != null) {
         error = React.createElement(Overlay, {
           "show": true,
           "target": ((function(_this) {
@@ -286,10 +297,23 @@
             };
           })(this)),
           "placement": "right"
-        }, React.createElement(Popover, null, this.state.error.msg));
+        }, React.createElement(Popover, null, this.state.modalFormError[key]));
         content = [content, error];
       }
       return content;
+    },
+    onModalFieldValueChange: function(model, key, e) {
+      var error, formValues, value;
+      value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
+      formValues = this.state.modalFormValues;
+      formValues[key] = value;
+      this.setState({
+        modalFormValues: formValues
+      });
+      error = model.validate(formValues);
+      return this.setState({
+        modalFormError: error
+      });
     },
     onCellValueChange: function(model, key, e) {
       var error, value;
@@ -348,9 +372,45 @@
       return e.stopPropagation();
     },
     createDateTimePickerControl: function() {
-      var dtpControls, el, k, ref1, results, schema, that, v;
+      var dtpControls, el, k, modalBody, ref1, results, schema, that, v;
       that = this;
       schema = this.props.collection.model.prototype.schema;
+      if (this.state.showModal) {
+        modalBody = $(React.findDOMNode(this.refs.modalBody));
+        for (k in schema) {
+          v = schema[k];
+          if (!(v.type.toLowerCase() === "datetime")) {
+            continue;
+          }
+          dtpControls = modalBody.find(".dtpControl_" + k);
+          dtpControls.datetimepicker({
+            format: v.format,
+            language: "zh-CN",
+            weekStart: 1,
+            todayBtn: 1,
+            autoclose: 1,
+            todayHighLight: 1,
+            startView: 2,
+            minView: 2,
+            forceParse: 0,
+            todayBtn: true,
+            pickerPosition: "bottom-right"
+          });
+          dtpControls.on("changeDate", (function(k) {
+            return function(e) {
+              var $el, model;
+              $el = $(e.currentTarget);
+              model = that.props.collection.get($el.data("cid"));
+              e = {
+                target: {
+                  value: $el.val()
+                }
+              };
+              return that.onModalFieldValueChange(model, k, e);
+            };
+          })(k));
+        }
+      }
       el = $(this.getDOMNode());
       results = [];
       for (k in schema) {
@@ -511,37 +571,19 @@
       return this.props.deleteModel(this.state.selectedRow);
     },
     saveButtonHandle: function() {
-      debugger;
-      var error, key, model, ref, ref1, target, v, value;
-      model = this.state.selectedRow;
-      ref1 = this.props.collection.model.prototype.schema;
-      for (key in ref1) {
-        v = ref1[key];
-        ref = "modalForm" + key + this.state.selectedRow.cid;
-        target = ReactDOM.findDOMNode(this.refs[ref]);
-        value = model.schema[key].type.toLowerCase() === "checkbox" ? (target.checked === true ? "1" : "0") : target.value;
-        error = this.props.setModel(model, key, value);
-        if (error) {
-          this.setState({
-            error: {
-              model: model,
-              key: key,
-              msg: error[key]
-            }
-          });
-          return;
-        }
-        alert("success");
+      if (this.state.modalFormError) {
+
+      } else {
+        this.props.saveModel(model, this.state.modalFormValues);
+        return alert("bccg");
       }
     },
     cellClickHandle: function(model, key, e) {
+      debugger;
       var ref1;
       if (this.setState.selectedRow !== model) {
         this.setState({
           selectedRow: model
-        });
-        this.setState({
-          modalFormValues: _.clone(model.attributes)
         });
       }
       if (this.props.readonly !== true && model.schema[key].readonly !== true && model.schema[key].edit !== true && this.state.editCellIsValidate === true) {
@@ -607,7 +649,9 @@
           return this.setState({
             selectedRow: model,
             showModal: true,
-            action: command
+            action: command,
+            modalFormValues: _.extend({}, model.attributes),
+            modalFormError: null
           });
         }
       }
@@ -815,7 +859,9 @@
         "bsSize": "large"
       }, React.createElement(Modal.Header, {
         "closeButton": true
-      }, React.createElement(Modal.Title, null, "\u8be6\u60c5")), React.createElement(Modal.Body, null, React.createElement(Grid, {
+      }, React.createElement(Modal.Title, null, "\u8be6\u60c5")), React.createElement(Modal.Body, {
+        "ref": "modalBody"
+      }, React.createElement(Grid, {
         "fluid": true
       }, React.createElement(Row, {
         "className": "show-grid"

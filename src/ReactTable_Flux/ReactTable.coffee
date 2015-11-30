@@ -27,10 +27,10 @@ window.BackboneTable = BackboneTable = Backbone.View.extend
     return new @collection.model()
   deleteModel:(model)->
     model.destroy()
-  saveModel:(model)->
+  saveModel:(model,props)->
     that = @
     isNew = model.isNew()
-    model.save
+    model.save props,
       success:->
         that.collection.add(model) if isNew
         that.render()
@@ -86,23 +86,35 @@ CreateCellContentMixin =
     ref = "modalForm" +key+model.cid
     schema = model.schema[key]
     type = schema.type.toLowerCase()
+    if model?.validation?[key]?.required is true
+      addonBefore = schema.title+"*"
+    else
+      addonBefore = schema.title
     content =
       switch type
-        when "text" then <Input type="text" ref={ref} addonBefore={schema.title} value={@state.modalFormValues[key]}/>
-        when "select" then <Input type="select" ref={ref} addonBefore={schema.title} value={@state.modalFormValues[key]}>
+        when "text" then <Input type="text" ref={ref} addonBefore={addonBefore} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
+        when "select" then <Input type="select" ref={ref} addonBefore={schema.title} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}>
                               {options = for opt in schema.options
                                 <option value={opt.val}>{opt.label}</option>}
                           </Input>
-        when "datetime"then <Input type="text" ref={ref} disabled=true addonBefore={schema.title} buttonAfter={<Button><Glyphicon glyph="remove" /></Button>} value={@state.modalFormValues[key]}/>
-        when "checkbox" then <Input type="checkbox" ref={ref} bsSize="small" label={schema.title} value={@state.modalFormValues[key]}/>
-        else  <Input type="text" addonBefore={schema.title} ref={ref} value={@state.modalFormValues[key]}/>
+        when "datetime"then <Input type="text" ref={ref} data-cid={model.cid}  disabled=true className="dtpControl_#{key}" addonBefore={schema.title} buttonAfter={<Button><Glyphicon glyph="remove" /></Button>} value={@state.modalFormValues[key]}/>
+        when "checkbox" then <Input type="checkbox" ref={ref} bsSize="small" label={schema.title} checked={@state.modalFormValues[key] is "1"} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
+        else  <Input type="text" addonBefore={schema.title} ref={ref} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
 
-    if @state.error?.model is model and @state.error.key is key
-      error = <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs[ref])} placement="right">
-                    <Popover>{@state.error.msg}</Popover>
+    if @state.modalFormError?[key]?
+      error = <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs[ref])}  placement="right">
+                    <Popover>{@state.modalFormError[key]}</Popover>
               </Overlay>
       content = [content,error]
     content
+  onModalFieldValueChange:(model,key,e)->
+    value = if model.schema[key].type.toLowerCase() is "checkbox" then (if e.target.checked is true then "1" else "0") else e.target.value
+    formValues = @state.modalFormValues
+    formValues[key] = value
+    @setState modalFormValues:formValues
+    error = model.validate formValues
+    @setState modalFormError:error
+
   onCellValueChange:(model,key,e)->
     value = if model.schema[key].type.toLowerCase() is "checkbox" then (if e.target.checked is true then "1" else "0") else e.target.value
     error = @props.setModel(model,key,value)
@@ -139,6 +151,19 @@ CreateCellContentMixin =
   createDateTimePickerControl:->
     that = @
     schema = @props.collection.model::schema
+    if @state.showModal
+      modalBody = $(React.findDOMNode(@refs.modalBody))
+      for k,v of schema when v.type.toLowerCase() is "datetime"
+          dtpControls = modalBody.find(".dtpControl_#{k}")
+          dtpControls.datetimepicker {format:v.format,language:"zh-CN",weekStart:1,todayBtn:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"}
+          dtpControls.on "changeDate",do (k)->
+            (e)->
+              $el = $(e.currentTarget)
+              model = that.props.collection.get $el.data("cid")
+              e = target:value:$el.val()
+              that.onModalFieldValueChange(model,k,e)
+
+
     el = $(@getDOMNode())
     for k,v of schema when v.type.toLowerCase() is "datetime"
       dtpControls = el.find(".dtpControl_#{k}")
@@ -232,23 +257,16 @@ ReactTable = React.createClass
   deleteConfirmButtonClickHandle:->
     @props.deleteModel @state.selectedRow
   saveButtonHandle:->
-    #取值验证
-    debugger
-    model = @state.selectedRow
-    for key,v of @props.collection.model::schema
-      ref =  "modalForm" + key + @state.selectedRow.cid
-      target = ReactDOM.findDOMNode(@refs[ref])
-      value = if model.schema[key].type.toLowerCase() is "checkbox" then (if target.checked is true then "1" else "0") else target.value
-      error = @props.setModel(model,key,value)
-      if error
-         @setState error:model:model,key:key,msg:error[key]
-         return
-
-      alert("success")
+    if @state.modalFormError
+      return
+    else
+      @.props.saveModel(model,@state.modalFormValues)
+      alert("bccg")
   cellClickHandle:(model,key,e)->
+    debugger
     if @setState.selectedRow isnt model
       @setState selectedRow:model
-      @setState modalFormValues:_.clone model.attributes
+
     if @props.readonly isnt true and model.schema[key].readonly isnt true and model.schema[key].edit isnt true and @state.editCellIsValidate is true
       unless @state.editCell?.model is model and @state.editCell.key is key
         @setState editCell:{model:model,key:key,value:model.get(key)}
@@ -268,7 +286,7 @@ ReactTable = React.createClass
       if command is "delete"
         @setState selectedRow:model,showConfirmModal:true,action:command
       else
-       @setState selectedRow:model,showModal:true,action:command
+       @setState selectedRow:model,showModal:true,action:command,modalFormValues:_.extend({}, model.attributes),modalFormError:null
   selectButtonClick:(model,e,eventKey)->#下拉按钮click处理程序都在这
     alert eventKey
   render:->
@@ -361,7 +379,7 @@ ReactTable = React.createClass
           <Modal.Header closeButton>
             <Modal.Title>详情</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body ref="modalBody">
             <Grid fluid=true >
               <Row className="show-grid">
                 {do =>
