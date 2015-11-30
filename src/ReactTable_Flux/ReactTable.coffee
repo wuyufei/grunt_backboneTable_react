@@ -41,8 +41,11 @@ window.BackboneTable = BackboneTable = Backbone.View.extend
 CreateCellContentMixin =
   componentWillUpdate:(nextProps,nextState)->
     el = $(@getDOMNode())
+    modalBody = $(React.findDOMNode(@refs.modalBody))
     schema = @props.collection.model::schema
-    el.find(".dtpControl_#{k}").datetimepicker("remove") for k,v of schema when v.type.toLowerCase() is "datetime"
+    for k,v of schema when v.type.toLowerCase() is "datetime"
+      el.find(".dtpControl_#{k}").datetimepicker("remove")
+      modalBody.find(".dtpControl_#{k}").datetimepicker("remove")
   componentDidMount:->
     @getColumnsWidth()
     @createDateTimePickerControl()
@@ -86,6 +89,8 @@ CreateCellContentMixin =
     ref = "modalForm" +key+model.cid
     schema = model.schema[key]
     type = schema.type.toLowerCase()
+    emptyValue = target:value:""
+    timeClearButton = <Button onClick={@onModalFieldValueChange.bind(@,model,key,emptyValue)}><Glyphicon glyph="remove" /></Button>
     if model?.validation?[key]?.required is true
       addonBefore = schema.title+"*"
     else
@@ -93,11 +98,11 @@ CreateCellContentMixin =
     content =
       switch type
         when "text" then <Input type="text" ref={ref} addonBefore={addonBefore} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
-        when "select" then <Input type="select" ref={ref} addonBefore={schema.title} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}>
+        when "select" then <Input type="select" ref={ref}  addonBefore={schema.title} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}>
                               {options = for opt in schema.options
                                 <option value={opt.val}>{opt.label}</option>}
-                          </Input>
-        when "datetime"then <Input type="text" ref={ref} data-cid={model.cid}  disabled=true className="dtpControl_#{key}" addonBefore={schema.title} buttonAfter={<Button><Glyphicon glyph="remove" /></Button>} value={@state.modalFormValues[key]}/>
+                           </Input>
+        when "datetime"then <Input type="text" ref={ref} data-cid={model.cid}  className="dtpControl_#{key} form_datetime" addonBefore={schema.title} buttonAfter={timeClearButton} value={@state.modalFormValues[key]}/>
         when "checkbox" then <Input type="checkbox" ref={ref} bsSize="small" label={schema.title} checked={@state.modalFormValues[key] is "1"} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
         else  <Input type="text" addonBefore={schema.title} ref={ref} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
 
@@ -108,6 +113,7 @@ CreateCellContentMixin =
       content = [content,error]
     content
   onModalFieldValueChange:(model,key,e)->
+    debugger
     value = if model.schema[key].type.toLowerCase() is "checkbox" then (if e.target.checked is true then "1" else "0") else e.target.value
     formValues = @state.modalFormValues
     formValues[key] = value
@@ -156,12 +162,15 @@ CreateCellContentMixin =
       for k,v of schema when v.type.toLowerCase() is "datetime"
           dtpControls = modalBody.find(".dtpControl_#{k}")
           dtpControls.datetimepicker {format:v.format,language:"zh-CN",weekStart:1,todayBtn:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"}
+          dtpControls.off "changeDate"
           dtpControls.on "changeDate",do (k)->
             (e)->
+              debugger
               $el = $(e.currentTarget)
               model = that.props.collection.get $el.data("cid")
               e = target:value:$el.val()
               that.onModalFieldValueChange(model,k,e)
+
 
 
     el = $(@getDOMNode())

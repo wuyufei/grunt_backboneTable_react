@@ -78,15 +78,18 @@
 
   CreateCellContentMixin = {
     componentWillUpdate: function(nextProps, nextState) {
-      var el, k, results, schema, v;
+      var el, k, modalBody, results, schema, v;
       el = $(this.getDOMNode());
+      modalBody = $(React.findDOMNode(this.refs.modalBody));
       schema = this.props.collection.model.prototype.schema;
       results = [];
       for (k in schema) {
         v = schema[k];
-        if (v.type.toLowerCase() === "datetime") {
-          results.push(el.find(".dtpControl_" + k).datetimepicker("remove"));
+        if (!(v.type.toLowerCase() === "datetime")) {
+          continue;
         }
+        el.find(".dtpControl_" + k).datetimepicker("remove");
+        results.push(modalBody.find(".dtpControl_" + k).datetimepicker("remove"));
       }
       return results;
     },
@@ -218,10 +221,20 @@
       return content;
     },
     getModalFieldContent: function(model, key) {
-      var addonBefore, content, error, opt, options, ref, ref1, ref2, ref3, schema, type;
+      var addonBefore, content, emptyValue, error, opt, options, ref, ref1, ref2, ref3, schema, timeClearButton, type;
       ref = "modalForm" + key + model.cid;
       schema = model.schema[key];
       type = schema.type.toLowerCase();
+      emptyValue = {
+        target: {
+          value: ""
+        }
+      };
+      timeClearButton = React.createElement(Button, {
+        "onClick": this.onModalFieldValueChange.bind(this, model, key, emptyValue)
+      }, React.createElement(Glyphicon, {
+        "glyph": "remove"
+      }));
       if ((model != null ? (ref1 = model.validation) != null ? (ref2 = ref1[key]) != null ? ref2.required : void 0 : void 0 : void 0) === true) {
         addonBefore = schema.title + "*";
       } else {
@@ -261,12 +274,9 @@
               "type": "text",
               "ref": ref,
               "data-cid": model.cid,
-              "disabled": true,
-              "className": "dtpControl_" + key,
+              "className": "dtpControl_" + key + " form_datetime",
               "addonBefore": schema.title,
-              "buttonAfter": React.createElement(Button, null, React.createElement(Glyphicon, {
-                "glyph": "remove"
-              })),
+              "buttonAfter": timeClearButton,
               "value": this.state.modalFormValues[key]
             });
           case "checkbox":
@@ -303,6 +313,7 @@
       return content;
     },
     onModalFieldValueChange: function(model, key, e) {
+      debugger;
       var error, formValues, value;
       value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
       formValues = this.state.modalFormValues;
@@ -396,8 +407,10 @@
             todayBtn: true,
             pickerPosition: "bottom-right"
           });
+          dtpControls.off("changeDate");
           dtpControls.on("changeDate", (function(k) {
             return function(e) {
+              debugger;
               var $el, model;
               $el = $(e.currentTarget);
               model = that.props.collection.get($el.data("cid"));
