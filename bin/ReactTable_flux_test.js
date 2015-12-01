@@ -114,6 +114,9 @@
     el: $("#container"),
     collection: users,
     readonly: false,
+    displayedPageRecordLength: 10,
+    displayedPagesLength: 10,
+    allowPage: true,
     cellClick: function(model, key) {
       debugger;
     },
@@ -121,39 +124,36 @@
       debugger;
       return alert("双击");
     },
-    addButtonClick: function(e) {},
-    headerButtons: [
-      {
-        text: "新增",
-        command: "add",
-        onclick: function(e) {}
-      }
-    ],
-    rowButtons: [
-      {
-        text: "详情",
-        command: "detail",
-        onclick: function(model, e) {}
-      }, {
-        text: "编辑",
-        command: "edit",
-        onclick: function(model, e) {}
-      }, {
-        text: "删除",
-        command: "delete",
-        onclick: function(model, e) {}
-      }, {
-        text: "审核",
-        command: "verify",
-        onclick: function(model, e) {
-          debugger;
-          return alert("");
+    buttons: {
+      headerButtons: {
+        add: {
+          text: "新增",
+          onclick: function(e) {}
         }
-      }, {
-        text: "删除",
-        command: "delete"
+      },
+      rowButtons: {
+        detail: {
+          text: "详情",
+          onclick: function(e) {}
+        },
+        edit: {
+          text: "编辑",
+          onclick: function(e) {}
+        },
+        "delete": {
+          text: "删除",
+          onclick: function(e) {}
+        },
+        verify: {
+          text: "审核",
+          onclick: function(model, e) {
+            debugger;
+            alert(model);
+            return e.preventDefault();
+          }
+        }
       }
-    ]
+    }
   });
 
   table.render();

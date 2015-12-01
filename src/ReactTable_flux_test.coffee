@@ -79,68 +79,83 @@ users.fetch
   reset:true
   async:false
 
-# TableView = Backbone.View.extend
-#   initialize:(options)->
-#     debugger
-#     this.listenTo @collection,"reset add remove change",@render.bind(this)
-#     this.options = {}
-#     _.extend this.options,options
-#   selectedRowChange:(model)->
-#     @.trigger("selectedRowChange",model)
-#   render:->
-#     debugger
-#     React.render <ReactTable {...@options} tableView={@}></ReactTable>,
-#       @el
-#   remove:->
-#     React.unmountComponentAtNode(@el)
-#     TableView.__super__.remove.apply(this,arguments)
+
 
 table = new BackboneTable
   el:$("#container")
   collection:users
   readonly:false
+  displayedPageRecordLength:10
+  displayedPagesLength:10
+  allowPage:true
   cellClick:(model,key)->
     debugger
   cellDoubleClick:(model,key)->
     debugger
     alert("双击")
-  addButtonClick:(e)->
+
+  buttons:
+    headerButtons:
+      add:
+        text:"新增"
+        onclick:(e)->
+    
+    rowButtons:
+      detail:
+        text:"详情"
+        onclick:(e)->
+          # e.preventDefault()
+      edit:
+        text:"编辑"
+        onclick:(e)->
+          # e.preventDefault()
+      delete:
+        text:"删除"
+        onclick:(e)->
+          # e.preventDefault()
+      verify:
+        text:"审核"
+        onclick:(model,e)->
+          debugger
+          alert(model)
+          e.preventDefault()
+  # addButtonClick:(e)->
     #e.preventDefault()
-  headerButtons:[
-    {
-      text:"新增"
-      command:"add"
-      onclick:(e)->
-        #e.preventDefault()
-    }
-  ]
-  rowButtons:[
-    {
-      text:"详情"
-      command:"detail"
-      onclick:(model,e)->
-        #e.preventDefault()
-    }
-    {
-      text:"编辑"
-      command:"edit"
-      onclick:(model,e)->
-
-    }
-    {
-      text:"删除"
-      command:"delete"
-      onclick:(model,e)->
-
-    }
-    {
-      text:"审核"
-      command:"verify"
-      onclick:(model,e)->
-        debugger
-        alert("")
-    }
-    {text:"删除", command:"delete"}
-  ]
+  # headerButtons:[
+  #   {
+  #     text:"新增"
+  #     command:"add"
+  #     onclick:(e)->
+  #       #e.preventDefault()
+  #   }
+  # ]
+  # rowButtons:[
+  #   {
+  #     text:"详情"
+  #     command:"detail"
+  #     onclick:(model,e)->
+  #       #e.preventDefault()
+  #   }
+  #   {
+  #     text:"编辑"
+  #     command:"edit"
+  #     onclick:(model,e)->
+  #
+  #   }
+  #   {
+  #     text:"删除"
+  #     command:"delete"
+  #     onclick:(model,e)->
+  #
+  #   }
+  #   {
+  #     text:"审核"
+  #     command:"verify"
+  #     onclick:(model,e)->
+  #       debugger
+  #       alert("")
+  #   }
+  #   {text:"删除", command:"delete"}
+  # ]
 
 table.render()

@@ -7,23 +7,6 @@
     initialize: function(options) {
       return this.options = _.extend({}, options);
     },
-    setModel: function(model, key, value) {
-      var error, invalidHandle;
-      error = null;
-      invalidHandle = function(model, er) {
-        return error = er;
-      };
-      model.on("invalid", invalidHandle);
-      model.set(key, value, {
-        validate: true
-      });
-      model.off("invalid", invalidHandle);
-      if ((error != null ? error[key] : void 0) != null) {
-        return error;
-      } else {
-        return null;
-      }
-    },
     getSortList: function(field, dir) {
       var getSortValue, schema, sortModels, that;
       that = this;
@@ -71,7 +54,8 @@
       return ReactDOM.render(React.createElement(ReactTable, React.__spread({}, this.options, {
         "setModel": this.setModel,
         "deleteModel": this.deleteModel,
-        "getSortList": this.getSortList
+        "getSortList": this.getSortList,
+        "getNewModel": this.getNewModel
       })), this.el);
     }
   });
@@ -131,7 +115,7 @@
               debugger;
               var $el, model;
               $el = $(e.currentTarget);
-              model = that.props.collection.get($el.data("cid"));
+              model = that.state.modalFormModel;
               e = {
                 target: {
                   value: $el.val()
@@ -424,9 +408,11 @@
       });
     },
     onCellValueChange: function(model, key, e) {
-      var error, value;
+      var error, obj, value;
       value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
-      error = this.props.setModel(model, key, value);
+      obj = {};
+      obj[key] = value;
+      error = model.validate(obj);
       if (error) {
         return this.setState({
           error: {
@@ -441,6 +427,7 @@
           }
         });
       } else {
+        model.set(obj);
         return this.setState({
           error: null,
           editCell: {
@@ -452,9 +439,11 @@
       }
     },
     onCellEndEdit: function(model, key, e) {
-      var error, value;
+      var error, obj, value;
       value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
-      error = this.props.setModel(model, key, value);
+      obj = {};
+      obj[key] = value;
+      error = model.validate(obj);
       if (error) {
         this.setState({
           error: {
@@ -470,6 +459,7 @@
           editCellIsValidate: false
         });
       } else {
+        model.set(obj);
         this.setState({
           error: null,
           editCellIsValidate: true,
@@ -497,6 +487,11 @@
           btnProps.clickHandle = this.buttonClickHandle.bind(this, "delete");
           btnProps.bsStyle = "danger";
           btnProps.icon = "trash";
+          break;
+        case "add":
+          btnProps.clickHandle = this.buttonClickHandle.bind(this, "add");
+          btnProps.bsStyle = "primary";
+          btnProps.icon = "plus";
           break;
         default:
           btnProps.clickHandle = buttonInfo.onclick;
@@ -558,6 +553,7 @@
           error: null
         },
         modalFormValues: null,
+        modalFormModel: null,
         editCellIsValidate: true,
         error: {
           model: null,
@@ -567,15 +563,14 @@
       };
     },
     componentWillMount: function() {
-      this.sortList = this.props.getSortList(this.state.sortField, this.state.sortDir);
-      return this.modalFormValues = {};
+      return this.sortList = this.props.getSortList(this.state.sortField, this.state.sortDir);
     },
     hideModalHandle: function() {
       return this.setState({
         showModal: false
       });
     },
-    hideConfirmModal: function() {
+    hideConfirmModalHandle: function() {
       return this.setState({
         showConfirmModal: false
       });
@@ -584,15 +579,18 @@
       return this.props.deleteModel(this.state.selectedRow);
     },
     saveButtonHandle: function() {
-      if (this.state.modalFormError) {
-
+      var error;
+      error = this.state.modalFormModel.validate(this.state.modalFormValues);
+      if (error) {
+        return this.setState({
+          modalFormError: error
+        });
       } else {
-        this.props.saveModel(model, this.state.modalFormValues);
-        return alert("bccg");
+        alert("");
+        return this.props.saveModel(this.state.modalFormModel, this.state.modalFormValues);
       }
     },
     cellClickHandle: function(model, key, e) {
-      debugger;
       var ref1;
       if (this.setState.selectedRow !== model) {
         this.setState({
@@ -625,49 +623,43 @@
         activePage: selectedEvent.eventKey
       });
     },
-    detailButtonHandle: function(model, e) {
-      var ref1;
-      if ((ref1 = _.findWhere(this.props.rowButtons, {
-        command: "detail"
-      })) != null) {
-        if (typeof ref1.onclick === "function") {
-          ref1.onclick(model, e);
-        }
-      }
-      if (!e.isDefaultPrevented()) {
-        return this.setState({
-          selectedRow: model,
-          showModal: true,
-          action: "detail"
-        });
-      }
-    },
     buttonClickHandle: function(command, model, e) {
-      debugger;
-      var ref1, ref2;
-      if ((ref1 = _.findWhere(this.props.rowButtons, {
-        command: command
-      })) != null) {
-        if (typeof ref1.onclick === "function") {
-          ref1.onclick(model, e);
+      var ref1, ref2, ref3, ref4, ref5, ref6;
+      if ((ref1 = this.props.buttons) != null) {
+        if ((ref2 = ref1.rowButtons) != null) {
+          if ((ref3 = ref2[command]) != null) {
+            if (typeof ref3.onclick === "function") {
+              ref3.onclick(model, e);
+            }
+          }
         }
       }
-      if ((ref2 = _.findWhere(this.props.headerButtons, {
-        command: "add"
-      })) != null) {
-        if (typeof ref2.onclick === "function") {
-          ref2.onclick(model, e);
+      if ((ref4 = this.props.buttons) != null) {
+        if ((ref5 = ref4.headerButtons) != null) {
+          if ((ref6 = ref5[command]) != null) {
+            if (typeof ref6.onclick === "function") {
+              ref6.onclick(model, e);
+            }
+          }
         }
       }
       if ((e != null ? typeof e.isDefaultPrevented === "function" ? e.isDefaultPrevented() : void 0 : void 0) !== true) {
         switch (command) {
           case "add":
-            return alert("add");
+            model = this.props.getNewModel();
+            return this.setState({
+              showModal: true,
+              action: command,
+              modalFormModel: model,
+              modalFormValues: _.extend({}, model.attributes),
+              modalFormError: null
+            });
           case "edit":
             return this.setState({
               selectedRow: model,
               showModal: true,
               action: command,
+              modalFormModel: model,
               modalFormValues: _.extend({}, model.attributes),
               modalFormError: null
             });
@@ -676,6 +668,7 @@
               selectedRow: model,
               showModal: true,
               action: command,
+              modalFormModel: model,
               modalFormValues: _.extend({}, model.attributes),
               modalFormError: null
             });
@@ -688,33 +681,17 @@
         }
       }
     },
-    selectButtonClick: function(model, e, eventKey) {
-      return alert(eventKey);
-    },
-    addButtonClick: function(e) {
-      var buttonHandle, ref1;
-      buttonHandle = (ref1 = _.findWhere(this.props.headerButtons, {
-        command: "add"
-      })) != null ? ref1.onclick : void 0;
-      if (typeof buttonHandle === "function") {
-        buttonHandle(e);
-      }
-      if (e.isDefaultPrevented() !== true) {
-        return this.setState({
-          selectedRow: model,
-          showModal: true,
-          action: command,
-          modalFormValues: _.extend({}, model.attributes),
-          modalFormError: null
-        });
-      }
-    },
     render: function() {
-      var pageCollection, pageCount, pageRecordLength, ref1, sortCollection;
-      pageRecordLength = (ref1 = this.props.pageRecordLength) != null ? ref1 : 10;
-      pageCount = Math.ceil(this.props.collection.length / 10);
-      sortCollection = this.sortList;
-      pageCollection = sortCollection.slice((this.state.activePage - 1) * 10, +(this.state.activePage * 10 - 1) + 1 || 9e9);
+      var btn, btnInfo, btnProps, buttons, columns, displayedPageRecordLength, displayedPagesLength, k, model, obj, pageCollection, pageCount, ref1, ref2, result, sortCollection, style, tmp1, v;
+      if (this.props.allowPage !== false) {
+        displayedPageRecordLength = (ref1 = this.props.displayedPageRecordLength) != null ? ref1 : 10;
+        displayedPagesLength = (ref2 = this.props.displayedPagesLength) != null ? ref2 : 10;
+        pageCount = Math.ceil(this.props.collection.length / displayedPageRecordLength);
+        sortCollection = this.sortList;
+        pageCollection = sortCollection.slice((this.state.activePage - 1) * displayedPageRecordLength, +(this.state.activePage * displayedPageRecordLength - 1) + 1 || 9e9);
+      } else {
+        pageCollection = this.sortList;
+      }
       return React.createElement("div", {
         "className": "panel panel-default"
       }, React.createElement("div", {
@@ -725,23 +702,33 @@
         "style": {
           minHeight: 20
         }
-      }, (function(_this) {
-        return function() {
-          var btnInfo, i, len, ref2, results;
-          ref2 = _this.props.headerButtons;
-          results = [];
-          for (i = 0, len = ref2.length; i < len; i++) {
-            btnInfo = ref2[i];
-            results.push(React.createElement(Button, {
-              "bsStyle": "primary",
-              "bsSize": "small"
-            }, React.createElement(Glyphicon, {
-              "glyph": "plus"
-            }), " " + btnInfo.text));
-          }
-          return results;
-        };
-      })(this)())), React.createElement("div", {
+      }, (buttons = (function() {
+        var ref3, results;
+        ref3 = this.props.buttons.headerButtons;
+        results = [];
+        for (k in ref3) {
+          v = ref3[k];
+          obj = _.extend({}, v);
+          obj.command = k;
+          results.push(obj);
+        }
+        return results;
+      }).call(this), (buttons != null ? buttons.length : void 0) > 0 ? React.createElement(ButtonGroup, null, (function() {
+        var i, len, ref3, results;
+        results = [];
+        for (i = 0, len = buttons.length; i < len; i++) {
+          btnInfo = buttons[i];
+          btnProps = this.getButtonProps(btnInfo);
+          results.push(React.createElement(Button, {
+            "onClick": (ref3 = btnProps.clickHandle) != null ? ref3.bind(this, null) : void 0,
+            "bsSize": "small",
+            "bsStyle": btnProps.bsStyle
+          }, React.createElement(Glyphicon, {
+            "glyph": btnProps.icon
+          }), " " + btnInfo.text));
+        }
+        return results;
+      }).call(this)) : void 0))), React.createElement("div", {
         "className": "table-responsive"
       }, React.createElement("table", {
         "className": "table table-bordered table-hover table-condensed",
@@ -750,158 +737,156 @@
           borderBottomStyle: "solid",
           borderBottomWidth: 1
         }
-      }, React.createElement("thead", null, (function(_this) {
-        return function() {
-          var k, ref2, ths, v;
-          ths = (function() {
-            var ref2, results;
-            ref2 = this.props.collection.model.prototype.schema;
-            results = [];
-            for (k in ref2) {
-              v = ref2[k];
-              results.push(React.createElement("th", {
-                "ref": "th_" + k,
-                "onClick": this.columnHeaderClickHandle.bind(this, k)
-              }, v.title, (function(_this) {
-                return function() {
-                  if (_this.state.sortField === k) {
-                    if (_this.state.sortDir === "asc") {
-                      return React.createElement("i", {
-                        "className": 'glyphicon glyphicon-sort-by-attributes pull-right'
-                      });
-                    } else {
-                      return React.createElement("i", {
-                        "className": 'glyphicon glyphicon-sort-by-attributes-alt pull-right'
-                      });
-                    }
-                  }
-                };
-              })(this)()));
-            }
-            return results;
-          }).call(_this);
-          if (((ref2 = _this.props.rowButtons) != null ? ref2.length : void 0) > 0) {
-            ths.push(React.createElement("th", {
-              "style": {
-                width: 160,
-                minWidth: 200
-              }
-            }));
-          }
-          return ths;
-        };
-      })(this)()), React.createElement("tbody", null, (function(_this) {
-        return function() {
-          var i, k, len, model, results, style, v;
+      }, React.createElement("thead", null, ((function() {
+        columns = (function() {
+          var ref3, results;
+          ref3 = this.props.collection.model.prototype.schema;
           results = [];
-          for (i = 0, len = pageCollection.length; i < len; i++) {
-            model = pageCollection[i];
-            results.push(React.createElement("tr", {
-              "className": (_this.state.selectedRow === model ? "info" : "")
-            }, (function() {
-              var ref2, ref3, ref4, results1;
-              ref2 = model.schema;
+          for (k in ref3) {
+            v = ref3[k];
+            results.push(React.createElement("th", {
+              "ref": "th_" + k,
+              "onClick": this.columnHeaderClickHandle.bind(this, k)
+            }, v.title, (this.state.sortField === k ? this.state.sortDir === "asc" ? React.createElement("i", {
+              "className": 'glyphicon glyphicon-sort-by-attributes pull-right'
+            }) : React.createElement("i", {
+              "className": 'glyphicon glyphicon-sort-by-attributes-alt pull-right'
+            }) : void 0)));
+          }
+          return results;
+        }).call(this);
+        debugger;
+        if ((this.props.buttons.rowButtons != null) && _.size(this.props.buttons.rowButtons) > 0) {
+          columns.push(React.createElement("th", {
+            "style": {
+              width: 160,
+              minWidth: 200
+            }
+          }));
+        }
+        return columns;
+      }).call(this))), React.createElement("tbody", null, (function() {
+        var i, len, results;
+        results = [];
+        for (i = 0, len = pageCollection.length; i < len; i++) {
+          model = pageCollection[i];
+          results.push(React.createElement("tr", {
+            "className": (this.state.selectedRow === model ? "info" : "")
+          }, (function() {
+            var ref3, ref4, ref5, results1;
+            ref3 = model.schema;
+            results1 = [];
+            for (k in ref3) {
+              v = ref3[k];
+              if (((ref4 = this.state.editCell) != null ? ref4.model : void 0) === model && this.state.editCell.key === k) {
+                style = {
+                  padding: 0,
+                  width: this.cellWidths[k]
+                };
+              } else if (v.edit === true) {
+                style = {
+                  padding: 0,
+                  width: (ref5 = v.width) != null ? ref5 : 200
+                };
+              } else {
+                style = {};
+              }
+              results1.push(React.createElement("td", {
+                "style": style,
+                "onClick": this.cellClickHandle.bind(this, model, k)
+              }, this.getCellContent(model, k)));
+            }
+            return results1;
+          }).call(this), React.createElement("td", null, React.createElement(ButtonGroup, {
+            "bsSize": "xsmall"
+          }, ((function() {
+            debugger;
+            var j, len1, ref3, ref4, results1;
+            buttons = (function() {
+              var ref3, results1;
+              ref3 = this.props.buttons.rowButtons;
               results1 = [];
-              for (k in ref2) {
-                v = ref2[k];
-                if (((ref3 = this.state.editCell) != null ? ref3.model : void 0) === model && this.state.editCell.key === k) {
-                  style = {
-                    padding: 0,
-                    width: this.cellWidths[k]
-                  };
-                } else if (v.edit === true) {
-                  style = {
-                    padding: 0,
-                    width: (ref4 = v.width) != null ? ref4 : 200
-                  };
-                } else {
-                  style = {};
-                }
-                results1.push(React.createElement("td", {
-                  "style": style,
-                  "onClick": this.cellClickHandle.bind(this, model, k)
-                }, this.getCellContent(model, k)));
+              for (k in ref3) {
+                v = ref3[k];
+                obj = _.extend({}, v);
+                obj.command = k;
+                results1.push(obj);
               }
               return results1;
-            }).call(_this), React.createElement("td", null, React.createElement(ButtonGroup, {
-              "bsSize": "xsmall"
-            }, (function() {
-              var btnInfo, btnProps, j, len1, ref2, ref3, ref4, result, tmp1;
-              if (((ref2 = _this.props.rowButtons) != null ? ref2.length : void 0) <= 3) {
-                ref3 = _this.props.rowButtons.slice(0, 3);
-                for (j = 0, len1 = ref3.length; j < len1; j++) {
-                  btnInfo = ref3[j];
-                  if (!(btnInfo != null)) {
-                    continue;
-                  }
-                  btnProps = _this.getButtonProps(btnInfo);
-                  React.createElement(Button, {
-                    "onClick": btnProps.clickHandle.bind(_this, model),
-                    "bsStyle": btnProps.bsStyle
-                  }, React.createElement(Glyphicon, {
-                    "glyph": btnProps.icon
-                  }), " " + btnInfo.text);
-                }
-              } else if (((ref4 = _this.props.rowButtons) != null ? ref4.length : void 0) > 3) {
-                result = (function() {
-                  var l, len2, ref5, ref6, results1;
-                  ref5 = this.props.rowButtons.slice(0, 2);
-                  results1 = [];
-                  for (l = 0, len2 = ref5.length; l < len2; l++) {
-                    btnInfo = ref5[l];
-                    btnProps = this.getButtonProps(btnInfo);
-                    results1.push(React.createElement(Button, {
-                      "onClick": (ref6 = btnProps.clickHandle) != null ? ref6.bind(this, model) : void 0,
-                      "bsStyle": btnProps.bsStyle
-                    }, React.createElement(Glyphicon, {
-                      "glyph": btnProps.icon
-                    }), " " + btnInfo.text));
-                  }
-                  return results1;
-                }).call(_this);
-                btnProps = _this.getButtonProps(_this.props.rowButtons[2]);
-                tmp1 = React.createElement(Dropdown, {
-                  "id": "dropdown-custom-2",
-                  "bsSize": "xsmall",
-                  "onSelect": _this.selectButtonClick.bind(_this, model)
-                }, React.createElement(Button, {
-                  "onClick": btnProps.clickHandle.bind(_this, model),
+            }).call(this);
+            if (buttons.length <= 3) {
+              ref3 = buttons.slice(0, +buttons.length + 1 || 9e9);
+              results1 = [];
+              for (j = 0, len1 = ref3.length; j < len1; j++) {
+                btn = ref3[j];
+                btnProps = this.getButtonProps(btn);
+                results1.push(React.createElement(Button, {
+                  "onClick": btnProps.clickHandle.bind(this, model),
                   "bsStyle": btnProps.bsStyle
                 }, React.createElement(Glyphicon, {
                   "glyph": btnProps.icon
-                }), " " + _this.props.rowButtons[2].text), React.createElement(Dropdown.Toggle, {
-                  "bsStyle": "default"
-                }), React.createElement(Dropdown.Menu, null, (function() {
-                  var l, len2, ref5, results1;
-                  ref5 = _this.props.rowButtons.slice(3);
-                  results1 = [];
-                  for (l = 0, len2 = ref5.length; l < len2; l++) {
-                    btnInfo = ref5[l];
-                    btnProps = _this.getButtonProps(btnInfo);
-                    results1.push(React.createElement(MenuItem, {
-                      "eventKey": btnInfo.command
-                    }, btnInfo.text));
-                  }
-                  return results1;
-                })()));
+                }), " " + btnInfo.text));
               }
+              return results1;
+            } else if (buttons.length > 3) {
+              result = (function() {
+                var l, len2, ref4, ref5, results2;
+                ref4 = buttons.slice(0, 2);
+                results2 = [];
+                for (l = 0, len2 = ref4.length; l < len2; l++) {
+                  btnInfo = ref4[l];
+                  btnProps = this.getButtonProps(btnInfo);
+                  results2.push(React.createElement(Button, {
+                    "onClick": (ref5 = btnProps.clickHandle) != null ? ref5.bind(this, model) : void 0,
+                    "bsStyle": btnProps.bsStyle
+                  }, React.createElement(Glyphicon, {
+                    "glyph": btnProps.icon
+                  }), " " + btnInfo.text));
+                }
+                return results2;
+              }).call(this);
+              btnProps = this.getButtonProps(buttons[2]);
+              tmp1 = React.createElement(Dropdown, {
+                "id": "dropdown-custom-2",
+                "bsSize": "xsmall"
+              }, React.createElement(Button, {
+                "onClick": (ref4 = btnProps.clickHandle) != null ? ref4.bind(this, model) : void 0,
+                "bsStyle": btnProps.bsStyle
+              }, React.createElement(Glyphicon, {
+                "glyph": btnProps.icon
+              }), " " + buttons[2].text), React.createElement(Dropdown.Toggle, {
+                "bsStyle": "default"
+              }), React.createElement(Dropdown.Menu, null, (function() {
+                var l, len2, ref5, ref6, results2;
+                ref5 = buttons.slice(3);
+                results2 = [];
+                for (l = 0, len2 = ref5.length; l < len2; l++) {
+                  btnInfo = ref5[l];
+                  btnProps = this.getButtonProps(btnInfo);
+                  results2.push(React.createElement(MenuItem, {
+                    "eventKey": btnInfo.command,
+                    "onClick": (ref6 = btnProps.clickHandle) != null ? ref6.bind(this, model) : void 0
+                  }, btnInfo.text));
+                }
+                return results2;
+              }).call(this)));
               result.push(tmp1);
               return result;
-            })()))));
-          }
-          return results;
-        };
-      })(this)())), React.createElement(Pagination, {
+            }
+          }).call(this))))));
+        }
+        return results;
+      }).call(this))), (this.props.allowPage !== false ? React.createElement(Pagination, {
         "prev": true,
         "next": true,
         "first": true,
         "last": true,
         "ellipsis": true,
         "items": pageCount,
-        "maxButtons": pageRecordLength,
+        "maxButtons": displayedPagesLength,
         "activePage": this.state.activePage,
         "onSelect": this.pageChangeHandle
-      })), React.createElement(Modal, {
+      }) : void 0)), React.createElement(Modal, {
         "show": this.state.showModal,
         "onHide": this.hideModalHandle,
         "bsSize": "large"
@@ -913,25 +898,23 @@
         "fluid": true
       }, React.createElement(Row, {
         "className": "show-grid"
-      }, (function(_this) {
-        return function() {
-          var k, model, ref2, results, v;
-          if (_this.state.modalFormValues != null) {
-            model = _this.state.selectedRow;
-            ref2 = model.schema;
-            results = [];
-            for (k in ref2) {
-              v = ref2[k];
-              results.push(React.createElement(Col, {
-                "xs": 12.,
-                "sm": 6.,
-                "md": 6.
-              }, _this.getModalFieldContent(model, k)));
-            }
-            return results;
+      }, ((function() {
+        var ref3, results;
+        if (this.state.modalFormValues != null) {
+          model = this.state.modalFormModel;
+          ref3 = model.schema;
+          results = [];
+          for (k in ref3) {
+            v = ref3[k];
+            results.push(React.createElement(Col, {
+              "xs": 12.,
+              "sm": 6.,
+              "md": 6.
+            }, this.getModalFieldContent(model, k)));
           }
-        };
-      })(this)()))), React.createElement(Modal.Footer, null, React.createElement(Button, {
+          return results;
+        }
+      }).call(this))))), React.createElement(Modal.Footer, null, React.createElement(Button, {
         "bsStyle": "primary",
         "onClick": this.saveButtonHandle
       }, "\u4fdd\u5b58"), React.createElement(Button, {
@@ -939,7 +922,7 @@
         "onClick": this.hideModalHandle
       }, "\u53d6\u6d88"))), React.createElement(Modal, {
         "show": this.state.showConfirmModal,
-        "onHide": this.hideConfirmModal,
+        "onHide": this.hideConfirmModalHandle,
         "bsSize": "sm"
       }, React.createElement(Modal.Header, {
         "closeButton": true
@@ -950,7 +933,7 @@
         "onClick": this.deleteConfirmButtonClickHandle
       }, "\u786e\u5b9a"), React.createElement(Button, {
         "bsStyle": "default",
-        "onClick": this.hideConfirmModal
+        "onClick": this.hideConfirmModalHandle
       }, "\u53d6\u6d88"))));
     }
   });
