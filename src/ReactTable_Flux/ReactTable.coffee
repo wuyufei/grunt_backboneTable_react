@@ -38,7 +38,7 @@ window.BackboneTable = BackboneTable = Backbone.View.extend
   render:->
     ReactDOM.render <ReactTable {...@options } setModel={@setModel} deleteModel={@deleteModel} getSortList={@getSortList}/>,@el
 
-CreateCellContentMixin =
+DateTimeCellMixin =
   componentWillUpdate:(nextProps,nextState)->
     el = $(@getDOMNode())
     modalBody = $(React.findDOMNode(@refs.modalBody))
@@ -47,11 +47,52 @@ CreateCellContentMixin =
       el.find(".dtpControl_#{k}").datetimepicker("remove")
       modalBody.find(".dtpControl_#{k}").datetimepicker("remove")
   componentDidMount:->
-    @getColumnsWidth()
+    debugger
     @createDateTimePickerControl()
   componentDidUpdate:->
-    @getColumnsWidth()
     @createDateTimePickerControl()
+  createDateTimePickerControl:->
+    that = @
+    schema = @props.collection.model::schema
+    if @state.showModal
+      modalBody = $(React.findDOMNode(@refs.modalBody))
+      for k,v of schema when v.type.toLowerCase() is "datetime"
+          dtpControls = modalBody.find(".dtpControl_#{k}")
+          dtpControls.datetimepicker {format:v.format,language:"zh-CN",weekStart:1,todayBtn:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"}
+          dtpControls.off "changeDate"
+          dtpControls.on "changeDate",do (k)->
+            (e)->
+              debugger
+              $el = $(e.currentTarget)
+              model = that.props.collection.get $el.data("cid")
+              e = target:value:$el.val()
+              that.onModalFieldValueChange(model,k,e)
+
+
+
+    el = $(@getDOMNode())
+    for k,v of schema when v.type.toLowerCase() is "datetime"
+      dtpControls = el.find(".dtpControl_#{k}")
+      dtpControls.datetimepicker {format:v.format,language:"zh-CN",weekStart:1,todayBtn:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"}
+      dtpControls.on "changeDate",do (k)->
+        (e)->
+          $el = $(e.currentTarget)
+          model = that.props.collection.get $el.data("cid")
+          e = target:value:$el.val()
+          that.onCellEndEdit(model,k,e)
+          if that.state.editCell?.model is model && that.state.editCell.key is k
+            that.setState editCell:null
+
+      if @state.editCell?.key is k
+        dtpControls.datetimepicker("show")
+
+
+CreateCellContentMixin =
+
+  componentDidMount:->
+    @getColumnsWidth()
+  componentDidUpdate:->
+    @getColumnsWidth()
   getCellContent:(model,key)->
     schema = model.schema[key]
     ref = key+model.cid
@@ -120,7 +161,6 @@ CreateCellContentMixin =
     @setState modalFormValues:formValues
     error = model.validate formValues
     @setState modalFormError:error
-
   onCellValueChange:(model,key,e)->
     value = if model.schema[key].type.toLowerCase() is "checkbox" then (if e.target.checked is true then "1" else "0") else e.target.value
     error = @props.setModel(model,key,value)
@@ -154,40 +194,6 @@ CreateCellContentMixin =
       @setState error:null,editCellIsValidate:true,editCell:null
     e.preventDefault()
     e.stopPropagation()
-  createDateTimePickerControl:->
-    that = @
-    schema = @props.collection.model::schema
-    if @state.showModal
-      modalBody = $(React.findDOMNode(@refs.modalBody))
-      for k,v of schema when v.type.toLowerCase() is "datetime"
-          dtpControls = modalBody.find(".dtpControl_#{k}")
-          dtpControls.datetimepicker {format:v.format,language:"zh-CN",weekStart:1,todayBtn:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"}
-          dtpControls.off "changeDate"
-          dtpControls.on "changeDate",do (k)->
-            (e)->
-              debugger
-              $el = $(e.currentTarget)
-              model = that.props.collection.get $el.data("cid")
-              e = target:value:$el.val()
-              that.onModalFieldValueChange(model,k,e)
-
-
-
-    el = $(@getDOMNode())
-    for k,v of schema when v.type.toLowerCase() is "datetime"
-      dtpControls = el.find(".dtpControl_#{k}")
-      dtpControls.datetimepicker {format:v.format,language:"zh-CN",weekStart:1,todayBtn:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"}
-      dtpControls.on "changeDate",do (k)->
-        (e)->
-          $el = $(e.currentTarget)
-          model = that.props.collection.get $el.data("cid")
-          e = target:value:$el.val()
-          that.onCellEndEdit(model,k,e)
-          if that.state.editCell?.model is model && that.state.editCell.key is k
-            that.setState editCell:null
-
-      if @state.editCell?.key is k
-        dtpControls.datetimepicker("show")
   getButtonProps:(buttonInfo)->
     btnProps = {}
     switch buttonInfo.command
@@ -229,7 +235,7 @@ CreateCellContentMixin =
 
 
 ReactTable = React.createClass
-  mixins:[CreateCellContentMixin]
+  mixins:[DateTimeCellMixin,CreateCellContentMixin]
   getInitialState:->
     activePage:1
     selectedRow:null
@@ -252,13 +258,7 @@ ReactTable = React.createClass
   componentWillMount:->
     @sortList = @props.getSortList(@state.sortField,@state.sortDir)
     @modalFormValues = {}
-  componentDidMount:->
-  componentWillUpdate:(nextProps,nextState)->
-  componentDidUpdate:->
-
   # changeStateEventHandler
-  showModalHandle:->
-    @setState showModal:true
   hideModalHandle:->
     @setState showModal:false
   hideConfirmModal:->
@@ -290,14 +290,32 @@ ReactTable = React.createClass
      _.findWhere(@props.rowButtons,command:"detail")?.onclick?(model,e)
      unless e.isDefaultPrevented() then @setState selectedRow:model,showModal:true,action:"detail"
   buttonClickHandle:(command,model,e)->
+    debugger
     _.findWhere(@props.rowButtons,command:command)?.onclick?(model,e)
-    unless e.isDefaultPrevented()
-      if command is "delete"
-        @setState selectedRow:model,showConfirmModal:true,action:command
-      else
-       @setState selectedRow:model,showModal:true,action:command,modalFormValues:_.extend({}, model.attributes),modalFormError:null
+    _.findWhere(@props.headerButtons,command:"add")?.onclick?(model,e)
+    unless e?.isDefaultPrevented?() is true
+      switch command
+        when "add"
+          alert("add")
+        when "edit"
+          @setState selectedRow:model,showModal:true,action:command,modalFormValues:_.extend({}, model.attributes),modalFormError:null
+        when "detail"
+          @setState selectedRow:model,showModal:true,action:command,modalFormValues:_.extend({}, model.attributes),modalFormError:null
+        when "delete"
+          @setState selectedRow:model,showConfirmModal:true,action:command
+
+      # if command is "delete"
+      #   @setState selectedRow:model,showConfirmModal:true,action:command
+      # else
+      #  @setState selectedRow:model,showModal:true,action:command,modalFormValues:_.extend({}, model.attributes),modalFormError:null
   selectButtonClick:(model,e,eventKey)->#下拉按钮click处理程序都在这
     alert eventKey
+  addButtonClick:(e)->
+    buttonHandle = _.findWhere(@props.headerButtons,command:"add")?.onclick
+    buttonHandle?(e)
+    if  e.isDefaultPrevented() isnt true
+      @setState selectedRow:model,showModal:true,action:command,modalFormValues:_.extend({}, model.attributes),modalFormError:null
+
   render:->
     pageRecordLength = @props.pageRecordLength ? 10
     pageCount = Math.ceil(@props.collection.length/10)
@@ -309,7 +327,7 @@ ReactTable = React.createClass
               {
                 do =>
                   for btnInfo in @props.headerButtons
-                    <Button bsStyle="primary" bsSize="small" onClick={btnInfo.onClick} onClick={@showModalHandle}><Glyphicon glyph="plus" />{" " + btnInfo.text}</Button>
+                    <Button bsStyle="primary" bsSize="small" ><Glyphicon glyph="plus" />{" " + btnInfo.text}</Button>
               }
             </div>
         </div>
@@ -392,7 +410,7 @@ ReactTable = React.createClass
             <Grid fluid=true >
               <Row className="show-grid">
                 {do =>
-                  if @state.selectedRow?
+                  if @state.modalFormValues?
                     model = @state.selectedRow
                     for k,v of model.schema
                       <Col xs={12} sm={6} md={6}>

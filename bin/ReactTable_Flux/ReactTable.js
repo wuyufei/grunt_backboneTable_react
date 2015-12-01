@@ -1,5 +1,5 @@
 (function() {
-  var BackboneTable, Breadcrumb, BreadcrumbItem, Button, ButtonGroup, Col, CreateCellContentMixin, Dropdown, Glyphicon, Grid, Input, MenuItem, Modal, Overlay, Pagination, Popover, ReactTable, Row, SplitButton;
+  var BackboneTable, Breadcrumb, BreadcrumbItem, Button, ButtonGroup, Col, CreateCellContentMixin, DateTimeCellMixin, Dropdown, Glyphicon, Grid, Input, MenuItem, Modal, Overlay, Pagination, Popover, ReactTable, Row, SplitButton;
 
   Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal, Overlay = ReactBootstrap.Overlay, Popover = ReactBootstrap.Popover, Pagination = ReactBootstrap.Pagination, ButtonGroup = ReactBootstrap.ButtonGroup, SplitButton = ReactBootstrap.SplitButton, MenuItem = ReactBootstrap.MenuItem, Glyphicon = ReactBootstrap.Glyphicon, Dropdown = ReactBootstrap.Dropdown;
 
@@ -76,7 +76,7 @@
     }
   });
 
-  CreateCellContentMixin = {
+  DateTimeCellMixin = {
     componentWillUpdate: function(nextProps, nextState) {
       var el, k, modalBody, results, schema, v;
       el = $(this.getDOMNode());
@@ -94,12 +94,109 @@
       return results;
     },
     componentDidMount: function() {
-      this.getColumnsWidth();
+      debugger;
       return this.createDateTimePickerControl();
     },
     componentDidUpdate: function() {
-      this.getColumnsWidth();
       return this.createDateTimePickerControl();
+    },
+    createDateTimePickerControl: function() {
+      var dtpControls, el, k, modalBody, ref1, results, schema, that, v;
+      that = this;
+      schema = this.props.collection.model.prototype.schema;
+      if (this.state.showModal) {
+        modalBody = $(React.findDOMNode(this.refs.modalBody));
+        for (k in schema) {
+          v = schema[k];
+          if (!(v.type.toLowerCase() === "datetime")) {
+            continue;
+          }
+          dtpControls = modalBody.find(".dtpControl_" + k);
+          dtpControls.datetimepicker({
+            format: v.format,
+            language: "zh-CN",
+            weekStart: 1,
+            todayBtn: 1,
+            autoclose: 1,
+            todayHighLight: 1,
+            startView: 2,
+            minView: 2,
+            forceParse: 0,
+            todayBtn: true,
+            pickerPosition: "bottom-right"
+          });
+          dtpControls.off("changeDate");
+          dtpControls.on("changeDate", (function(k) {
+            return function(e) {
+              debugger;
+              var $el, model;
+              $el = $(e.currentTarget);
+              model = that.props.collection.get($el.data("cid"));
+              e = {
+                target: {
+                  value: $el.val()
+                }
+              };
+              return that.onModalFieldValueChange(model, k, e);
+            };
+          })(k));
+        }
+      }
+      el = $(this.getDOMNode());
+      results = [];
+      for (k in schema) {
+        v = schema[k];
+        if (!(v.type.toLowerCase() === "datetime")) {
+          continue;
+        }
+        dtpControls = el.find(".dtpControl_" + k);
+        dtpControls.datetimepicker({
+          format: v.format,
+          language: "zh-CN",
+          weekStart: 1,
+          todayBtn: 1,
+          autoclose: 1,
+          todayHighLight: 1,
+          startView: 2,
+          minView: 2,
+          forceParse: 0,
+          todayBtn: true,
+          pickerPosition: "bottom-right"
+        });
+        dtpControls.on("changeDate", (function(k) {
+          return function(e) {
+            var $el, model, ref1;
+            $el = $(e.currentTarget);
+            model = that.props.collection.get($el.data("cid"));
+            e = {
+              target: {
+                value: $el.val()
+              }
+            };
+            that.onCellEndEdit(model, k, e);
+            if (((ref1 = that.state.editCell) != null ? ref1.model : void 0) === model && that.state.editCell.key === k) {
+              return that.setState({
+                editCell: null
+              });
+            }
+          };
+        })(k));
+        if (((ref1 = this.state.editCell) != null ? ref1.key : void 0) === k) {
+          results.push(dtpControls.datetimepicker("show"));
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    }
+  };
+
+  CreateCellContentMixin = {
+    componentDidMount: function() {
+      return this.getColumnsWidth();
+    },
+    componentDidUpdate: function() {
+      return this.getColumnsWidth();
     },
     getCellContent: function(model, key) {
       var content, error, isEdit, opt, ref, ref1, ref2, ref3, schema;
@@ -382,95 +479,6 @@
       e.preventDefault();
       return e.stopPropagation();
     },
-    createDateTimePickerControl: function() {
-      var dtpControls, el, k, modalBody, ref1, results, schema, that, v;
-      that = this;
-      schema = this.props.collection.model.prototype.schema;
-      if (this.state.showModal) {
-        modalBody = $(React.findDOMNode(this.refs.modalBody));
-        for (k in schema) {
-          v = schema[k];
-          if (!(v.type.toLowerCase() === "datetime")) {
-            continue;
-          }
-          dtpControls = modalBody.find(".dtpControl_" + k);
-          dtpControls.datetimepicker({
-            format: v.format,
-            language: "zh-CN",
-            weekStart: 1,
-            todayBtn: 1,
-            autoclose: 1,
-            todayHighLight: 1,
-            startView: 2,
-            minView: 2,
-            forceParse: 0,
-            todayBtn: true,
-            pickerPosition: "bottom-right"
-          });
-          dtpControls.off("changeDate");
-          dtpControls.on("changeDate", (function(k) {
-            return function(e) {
-              debugger;
-              var $el, model;
-              $el = $(e.currentTarget);
-              model = that.props.collection.get($el.data("cid"));
-              e = {
-                target: {
-                  value: $el.val()
-                }
-              };
-              return that.onModalFieldValueChange(model, k, e);
-            };
-          })(k));
-        }
-      }
-      el = $(this.getDOMNode());
-      results = [];
-      for (k in schema) {
-        v = schema[k];
-        if (!(v.type.toLowerCase() === "datetime")) {
-          continue;
-        }
-        dtpControls = el.find(".dtpControl_" + k);
-        dtpControls.datetimepicker({
-          format: v.format,
-          language: "zh-CN",
-          weekStart: 1,
-          todayBtn: 1,
-          autoclose: 1,
-          todayHighLight: 1,
-          startView: 2,
-          minView: 2,
-          forceParse: 0,
-          todayBtn: true,
-          pickerPosition: "bottom-right"
-        });
-        dtpControls.on("changeDate", (function(k) {
-          return function(e) {
-            var $el, model, ref1;
-            $el = $(e.currentTarget);
-            model = that.props.collection.get($el.data("cid"));
-            e = {
-              target: {
-                value: $el.val()
-              }
-            };
-            that.onCellEndEdit(model, k, e);
-            if (((ref1 = that.state.editCell) != null ? ref1.model : void 0) === model && that.state.editCell.key === k) {
-              return that.setState({
-                editCell: null
-              });
-            }
-          };
-        })(k));
-        if (((ref1 = this.state.editCell) != null ? ref1.key : void 0) === k) {
-          results.push(dtpControls.datetimepicker("show"));
-        } else {
-          results.push(void 0);
-        }
-      }
-      return results;
-    },
     getButtonProps: function(buttonInfo) {
       var btnProps, ref1, ref2;
       btnProps = {};
@@ -534,7 +542,7 @@
   };
 
   ReactTable = React.createClass({
-    mixins: [CreateCellContentMixin],
+    mixins: [DateTimeCellMixin, CreateCellContentMixin],
     getInitialState: function() {
       var ref1;
       return {
@@ -561,14 +569,6 @@
     componentWillMount: function() {
       this.sortList = this.props.getSortList(this.state.sortField, this.state.sortDir);
       return this.modalFormValues = {};
-    },
-    componentDidMount: function() {},
-    componentWillUpdate: function(nextProps, nextState) {},
-    componentDidUpdate: function() {},
-    showModalHandle: function() {
-      return this.setState({
-        showModal: true
-      });
     },
     hideModalHandle: function() {
       return this.setState({
@@ -643,7 +643,8 @@
       }
     },
     buttonClickHandle: function(command, model, e) {
-      var ref1;
+      debugger;
+      var ref1, ref2;
       if ((ref1 = _.findWhere(this.props.rowButtons, {
         command: command
       })) != null) {
@@ -651,26 +652,62 @@
           ref1.onclick(model, e);
         }
       }
-      if (!e.isDefaultPrevented()) {
-        if (command === "delete") {
-          return this.setState({
-            selectedRow: model,
-            showConfirmModal: true,
-            action: command
-          });
-        } else {
-          return this.setState({
-            selectedRow: model,
-            showModal: true,
-            action: command,
-            modalFormValues: _.extend({}, model.attributes),
-            modalFormError: null
-          });
+      if ((ref2 = _.findWhere(this.props.headerButtons, {
+        command: "add"
+      })) != null) {
+        if (typeof ref2.onclick === "function") {
+          ref2.onclick(model, e);
+        }
+      }
+      if ((e != null ? typeof e.isDefaultPrevented === "function" ? e.isDefaultPrevented() : void 0 : void 0) !== true) {
+        switch (command) {
+          case "add":
+            return alert("add");
+          case "edit":
+            return this.setState({
+              selectedRow: model,
+              showModal: true,
+              action: command,
+              modalFormValues: _.extend({}, model.attributes),
+              modalFormError: null
+            });
+          case "detail":
+            return this.setState({
+              selectedRow: model,
+              showModal: true,
+              action: command,
+              modalFormValues: _.extend({}, model.attributes),
+              modalFormError: null
+            });
+          case "delete":
+            return this.setState({
+              selectedRow: model,
+              showConfirmModal: true,
+              action: command
+            });
         }
       }
     },
     selectButtonClick: function(model, e, eventKey) {
       return alert(eventKey);
+    },
+    addButtonClick: function(e) {
+      var buttonHandle, ref1;
+      buttonHandle = (ref1 = _.findWhere(this.props.headerButtons, {
+        command: "add"
+      })) != null ? ref1.onclick : void 0;
+      if (typeof buttonHandle === "function") {
+        buttonHandle(e);
+      }
+      if (e.isDefaultPrevented() !== true) {
+        return this.setState({
+          selectedRow: model,
+          showModal: true,
+          action: command,
+          modalFormValues: _.extend({}, model.attributes),
+          modalFormError: null
+        });
+      }
     },
     render: function() {
       var pageCollection, pageCount, pageRecordLength, ref1, sortCollection;
@@ -697,9 +734,7 @@
             btnInfo = ref2[i];
             results.push(React.createElement(Button, {
               "bsStyle": "primary",
-              "bsSize": "small",
-              "onClick": btnInfo.onClick,
-              "onClick": _this.showModalHandle
+              "bsSize": "small"
             }, React.createElement(Glyphicon, {
               "glyph": "plus"
             }), " " + btnInfo.text));
@@ -881,7 +916,7 @@
       }, (function(_this) {
         return function() {
           var k, model, ref2, results, v;
-          if (_this.state.selectedRow != null) {
+          if (_this.state.modalFormValues != null) {
             model = _this.state.selectedRow;
             ref2 = model.schema;
             results = [];
