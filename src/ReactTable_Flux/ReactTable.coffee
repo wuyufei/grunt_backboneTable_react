@@ -3,6 +3,8 @@
 window.BackboneTable = BackboneTable = Backbone.View.extend
   initialize:(options)->
     @options = _.extend {},options
+    #监听事件
+    @listenTo @collection,"sync destroy add",@render
 
   getSortList:(field,dir)->
     that = @
@@ -19,7 +21,14 @@ window.BackboneTable = BackboneTable = Backbone.View.extend
   getNewModel:()->
     return new @collection.model()
   deleteModel:(model)->
-    model.destroy()
+    er = ""
+    model.destroy
+      async:false
+      success:->
+        er = ""
+      error:(msg)->
+        er = msg
+    er
   saveModel:(model,props)->
     that = @
     isNew = model.isNew()
@@ -29,7 +38,7 @@ window.BackboneTable = BackboneTable = Backbone.View.extend
         that.render()
       error:->
   render:->
-    ReactDOM.render <ReactTable {...@options } setModel={@setModel} deleteModel={@deleteModel} getSortList={@getSortList} getNewModel={@getNewModel}/>,@el
+    ReactDOM.render <ReactTable {...@options } saveModel={@saveModel.bind(@)} deleteModel={@deleteModel} getSortList={@getSortList} getNewModel={@getNewModel}/>,@el
 
 DateTimeCellMixin =
   componentWillUpdate:(nextProps,nextState)->
@@ -40,10 +49,10 @@ DateTimeCellMixin =
       el.find(".dtpControl_#{k}").datetimepicker("remove")
       modalBody.find(".dtpControl_#{k}").datetimepicker("remove")
   componentDidMount:->
-    debugger
     @createDateTimePickerControl()
   componentDidUpdate:->
-    @createDateTimePickerControl()
+    if @state.action in ["add","edit"]
+      @createDateTimePickerControl()
   createDateTimePickerControl:->
     that = @
     schema = @props.collection.model::schema
@@ -55,7 +64,6 @@ DateTimeCellMixin =
           dtpControls.off "changeDate"
           dtpControls.on "changeDate",do (k)->
             (e)->
-              debugger
               $el = $(e.currentTarget)
               model = that.state.modalFormModel
               e = target:value:$el.val()
@@ -112,7 +120,7 @@ CreateCellContentMixin =
       if schema.type.toLowerCase() is "checkbox"
         if model.get(key) is "1" then content = <span className="glyphicon glyphicon-ok"></span> else content = <span/>
       else if schema.type.toLowerCase() is "select"
-        content =<span>{_.findWhere(schema.options,val:model.get(key)).label}</span>
+        content =<span>{_.findWhere(schema.options,val:model.get(key))?.label}</span>
     if @state.error?.model is model and @state.error.key is key
       error = <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs[ref])} placement="right">
                     <Popover>{@state.error.msg}</Popover>
@@ -141,13 +149,12 @@ CreateCellContentMixin =
         else  <Input type="text" addonBefore={schema.title} ref={ref} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
 
     if @state.modalFormError?[key]?
-      error = <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs[ref])}  placement="right">
-                    <Popover>{@state.modalFormError[key]}</Popover>
+      error = <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs[ref])} container={@}  placement="top">
+                    <Popover style={{zIndex:99999}}>{@state.modalFormError[key]}</Popover>
               </Overlay>
       content = [content,error]
     content
   onModalFieldValueChange:(model,key,e)->
-    debugger
     value = if model.schema[key].type.toLowerCase() is "checkbox" then (if e.target.checked is true then "1" else "0") else e.target.value
     formValues = @state.modalFormValues
     formValues[key] = value
@@ -183,7 +190,6 @@ CreateCellContentMixin =
     obj = {}
     obj[key] = value
     error = model.validate obj
-    # error = @props.setModel(model,key,value)
     if error
        @setState
           error : model:model,key:key,msg:error[key]
@@ -262,18 +268,33 @@ ReactTable = React.createClass
       msg:null
   componentWillMount:->
     @sortList = @props.getSortList(@state.sortField,@state.sortDir)
+  componentWillReceiveProps:(nextProps)->
+    @sortList = @props.getSortList @state.sortField,@state.sortDir
+    @setState showModal:false,showConfirmModal:false
   hideModalHandle:->
     @setState showModal:false
   hideConfirmModalHandle:->
     @setState showConfirmModal:false
   deleteConfirmButtonClickHandle:->
-    @props.deleteModel @state.selectedRow
+    debugger
+    error = @props.deleteModel @state.selectedRow
+    @hideConfirmModalHandle()
+    if error
+      alert(error)
+
   saveButtonHandle:->
-    error = @state.modalFormModel.validate @state.modalFormValues
+    debugger
+    #要考虑到value为空对象的情况
+    #从schema中取得attr
+    schemas = @props.collection.model::schema
+    obj = {}
+    obj[k] = undefined for k,v of schemas
+    values = _.extend obj,@state.modalFormValues
+
+    error = @state.modalFormModel.validate values
     if error
       @setState modalFormError:error
     else
-      alert("")
       @.props.saveModel(@state.modalFormModel,@state.modalFormValues)
 
   cellClickHandle:(model,key,e)->
@@ -334,12 +355,12 @@ ReactTable = React.createClass
               }
             </div>
         </div>
-        <div className="table-responsive" >
+        <div className="table-responsive">
             <table className="table table-bordered table-hover table-condensed" style={{borderBottomColor:"rgb(221, 221, 221)",borderBottomStyle:"solid",borderBottomWidth:1}}>
               <thead>
                 {
 
-                    columns=for k,v of @props.collection.model::schema
+                    columns=for k,v of @props.collection.model::schema when v.visible isnt false
                               <th ref={"th_#{k}"} onClick={@columnHeaderClickHandle.bind(@,k)}>
                                 {v.title}
                                 {
@@ -351,7 +372,6 @@ ReactTable = React.createClass
                                         <i className='glyphicon glyphicon-sort-by-attributes-alt pull-right'/>
                                 }
                               </th>
-                    debugger
                     if @props.buttons.rowButtons? and _.size(@props.buttons.rowButtons)>0
                       columns.push <th style={{width:160,minWidth:200}}></th>
                     columns
@@ -363,7 +383,7 @@ ReactTable = React.createClass
                     for model in pageCollection
                       <tr className={if @state.selectedRow is model then "info" else ""}>
                         {
-                          for k,v of model.schema
+                          for k,v of model.schema when v.visible isnt false
                             if @state.editCell?.model is model and @state.editCell.key is k
                               style={padding:0,width:@cellWidths[k]}
                             else if v.edit is true
@@ -377,14 +397,13 @@ ReactTable = React.createClass
                             {
 
                                 #把对象转换为数组
-                                debugger
                                 buttons = for k,v of @props.buttons.rowButtons
                                             obj = _.extend {},v
                                             obj.command = k
                                             obj
                                 if buttons.length <= 3
-                                  for btn in buttons[0..buttons.length]
-                                    btnProps = @getButtonProps(btn)
+                                  for btnInfo in buttons[0..buttons.length]
+                                    btnProps = @getButtonProps(btnInfo)
                                     <Button onClick={btnProps.clickHandle.bind(@,model)} bsStyle={btnProps.bsStyle}><Glyphicon glyph={btnProps.icon} />{" " + btnInfo.text}</Button>
                                 else if buttons.length>3
                                   result =   for btnInfo in buttons[0..1]
@@ -419,7 +438,7 @@ ReactTable = React.createClass
           <Modal.Header closeButton>
             <Modal.Title>详情</Modal.Title>
           </Modal.Header>
-          <Modal.Body ref="modalBody">
+          <Modal.Body>
             <Grid fluid=true >
               <Row className="show-grid">
                 {
@@ -433,8 +452,13 @@ ReactTable = React.createClass
             </Grid>
           </Modal.Body>
           <Modal.Footer>
+            {
+              if @state.action in ["add","edit"]
+                <div>
                     <Button bsStyle="primary" onClick={@saveButtonHandle}>保存</Button>
                     <Button bsStyle="default" onClick={@hideModalHandle}>取消</Button>
+                </div>
+            }
           </Modal.Footer>
         </Modal>
         <Modal show={@state.showConfirmModal} onHide={@hideConfirmModalHandle} bsSize="sm">

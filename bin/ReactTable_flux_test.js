@@ -41,7 +41,8 @@
         type: "Text",
         title: "姓名",
         readonly: true,
-        readonlyOnModal: false
+        readonlyOnModal: false,
+        visible: false
       },
       age: {
         type: "Text",
@@ -105,13 +106,14 @@
 
   ReactTable = window.ReactTable;
 
-  users.fetch({
-    reset: true,
-    async: false
+  $("#btnSearch").click(function() {
+    return users.fetch({
+      reset: true
+    });
   });
 
   table = new BackboneTable({
-    el: $("#container"),
+    el: $("#table"),
     collection: users,
     readonly: false,
     displayedPageRecordLength: 10,
@@ -128,7 +130,7 @@
       headerButtons: {
         add: {
           text: "新增",
-          onclick: function(e) {}
+          onclick: function(model, e) {}
         }
       },
       rowButtons: {

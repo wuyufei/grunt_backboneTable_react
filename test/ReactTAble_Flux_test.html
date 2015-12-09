@@ -33,9 +33,22 @@
 </head>
 
 <body>
-	<div id="container">
 
-	</div>
+		<div class="container-fluid">
+			<ul class="breadcrumb">
+			    <li>您的位置</li>
+			    <li>船舶管理</li>
+			    <li class="active">航运合同管理</li>
+			</ul>
+			<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-2">
+						 <button id="btnSearch" type="button" class="btn btn-info btn-block">
+								 查询
+						 </button>
+				 </div>
+				<div class="col-md-12" id="table"></div>
+			</div>
+		</div>
 	<script src="http://localhost:35729/livereload.js"></script>
   <script src="/bin/ReactTable_flux_test.js"></script>
 </body>

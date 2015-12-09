@@ -32,6 +32,7 @@ User = Backbone.Model.extend
       title:"姓名"
       readonly:true
       readonlyOnModal:false
+      visible:false
     age:
       type:"Text"
       title:"年龄"
@@ -75,14 +76,17 @@ template =
 Mock.mock /users/,"get",(options)->
   Mock.mock(template).list
 ReactTable = window.ReactTable
-users.fetch
-  reset:true
-  async:false
 
+#
+# users.fetch
+#   reset:true
+#   async:false
 
+$("#btnSearch").click ->
+  users.fetch reset:true
 
 table = new BackboneTable
-  el:$("#container")
+  el:$("#table")
   collection:users
   readonly:false
   displayedPageRecordLength:10
@@ -98,8 +102,7 @@ table = new BackboneTable
     headerButtons:
       add:
         text:"新增"
-        onclick:(e)->
-    
+        onclick:(model,e)->
     rowButtons:
       detail:
         text:"详情"

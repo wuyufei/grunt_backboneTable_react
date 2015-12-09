@@ -5,7 +5,8 @@
 
   window.BackboneTable = BackboneTable = Backbone.View.extend({
     initialize: function(options) {
-      return this.options = _.extend({}, options);
+      this.options = _.extend({}, options);
+      return this.listenTo(this.collection, "sync destroy add", this.render);
     },
     getSortList: function(field, dir) {
       var getSortValue, schema, sortModels, that;
@@ -34,7 +35,18 @@
       return new this.collection.model();
     },
     deleteModel: function(model) {
-      return model.destroy();
+      var er;
+      er = "";
+      model.destroy({
+        async: false,
+        success: function() {
+          return er = "";
+        },
+        error: function(msg) {
+          return er = msg;
+        }
+      });
+      return er;
     },
     saveModel: function(model, props) {
       var isNew, that;
@@ -52,7 +64,7 @@
     },
     render: function() {
       return ReactDOM.render(React.createElement(ReactTable, React.__spread({}, this.options, {
-        "setModel": this.setModel,
+        "saveModel": this.saveModel.bind(this),
         "deleteModel": this.deleteModel,
         "getSortList": this.getSortList,
         "getNewModel": this.getNewModel
@@ -78,11 +90,13 @@
       return results;
     },
     componentDidMount: function() {
-      debugger;
       return this.createDateTimePickerControl();
     },
     componentDidUpdate: function() {
-      return this.createDateTimePickerControl();
+      var ref1;
+      if ((ref1 = this.state.action) === "add" || ref1 === "edit") {
+        return this.createDateTimePickerControl();
+      }
     },
     createDateTimePickerControl: function() {
       var dtpControls, el, k, modalBody, ref1, results, schema, that, v;
@@ -112,7 +126,6 @@
           dtpControls.off("changeDate");
           dtpControls.on("changeDate", (function(k) {
             return function(e) {
-              debugger;
               var $el, model;
               $el = $(e.currentTarget);
               model = that.state.modalFormModel;
@@ -183,7 +196,7 @@
       return this.getColumnsWidth();
     },
     getCellContent: function(model, key) {
-      var content, error, isEdit, opt, ref, ref1, ref2, ref3, schema;
+      var content, error, isEdit, opt, ref, ref1, ref2, ref3, ref4, schema;
       schema = model.schema[key];
       ref = key + model.cid;
       if (this.props.readonly === true) {
@@ -282,12 +295,12 @@
             content = React.createElement("span", null);
           }
         } else if (schema.type.toLowerCase() === "select") {
-          content = React.createElement("span", null, (_.findWhere(schema.options, {
+          content = React.createElement("span", null, ((ref3 = _.findWhere(schema.options, {
             val: model.get(key)
-          }).label));
+          })) != null ? ref3.label : void 0));
         }
       }
-      if (((ref3 = this.state.error) != null ? ref3.model : void 0) === model && this.state.error.key === key) {
+      if (((ref4 = this.state.error) != null ? ref4.model : void 0) === model && this.state.error.key === key) {
         error = React.createElement(Overlay, {
           "show": true,
           "target": ((function(_this) {
@@ -387,14 +400,18 @@
               return ReactDOM.findDOMNode(_this.refs[ref]);
             };
           })(this)),
-          "placement": "right"
-        }, React.createElement(Popover, null, this.state.modalFormError[key]));
+          "container": this,
+          "placement": "top"
+        }, React.createElement(Popover, {
+          "style": {
+            zIndex: 99999
+          }
+        }, this.state.modalFormError[key]));
         content = [content, error];
       }
       return content;
     },
     onModalFieldValueChange: function(model, key, e) {
-      debugger;
       var error, formValues, value;
       value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
       formValues = this.state.modalFormValues;
@@ -565,6 +582,13 @@
     componentWillMount: function() {
       return this.sortList = this.props.getSortList(this.state.sortField, this.state.sortDir);
     },
+    componentWillReceiveProps: function(nextProps) {
+      this.sortList = this.props.getSortList(this.state.sortField, this.state.sortDir);
+      return this.setState({
+        showModal: false,
+        showConfirmModal: false
+      });
+    },
     hideModalHandle: function() {
       return this.setState({
         showModal: false
@@ -576,17 +600,30 @@
       });
     },
     deleteConfirmButtonClickHandle: function() {
-      return this.props.deleteModel(this.state.selectedRow);
+      debugger;
+      var error;
+      error = this.props.deleteModel(this.state.selectedRow);
+      this.hideConfirmModalHandle();
+      if (error) {
+        return alert(error);
+      }
     },
     saveButtonHandle: function() {
-      var error;
-      error = this.state.modalFormModel.validate(this.state.modalFormValues);
+      debugger;
+      var error, k, obj, schemas, v, values;
+      schemas = this.props.collection.model.prototype.schema;
+      obj = {};
+      for (k in schemas) {
+        v = schemas[k];
+        obj[k] = void 0;
+      }
+      values = _.extend(obj, this.state.modalFormValues);
+      error = this.state.modalFormModel.validate(values);
       if (error) {
         return this.setState({
           modalFormError: error
         });
       } else {
-        alert("");
         return this.props.saveModel(this.state.modalFormModel, this.state.modalFormValues);
       }
     },
@@ -682,7 +719,7 @@
       }
     },
     render: function() {
-      var btn, btnInfo, btnProps, buttons, columns, displayedPageRecordLength, displayedPagesLength, k, model, obj, pageCollection, pageCount, ref1, ref2, result, sortCollection, style, tmp1, v;
+      var btnInfo, btnProps, buttons, columns, displayedPageRecordLength, displayedPagesLength, k, model, obj, pageCollection, pageCount, ref1, ref2, ref3, result, sortCollection, style, tmp1, v;
       if (this.props.allowPage !== false) {
         displayedPageRecordLength = (ref1 = this.props.displayedPageRecordLength) != null ? ref1 : 10;
         displayedPagesLength = (ref2 = this.props.displayedPagesLength) != null ? ref2 : 10;
@@ -737,13 +774,13 @@
           borderBottomStyle: "solid",
           borderBottomWidth: 1
         }
-      }, React.createElement("thead", null, ((function() {
-        columns = (function() {
-          var ref3, results;
-          ref3 = this.props.collection.model.prototype.schema;
-          results = [];
-          for (k in ref3) {
-            v = ref3[k];
+      }, React.createElement("thead", null, (columns = (function() {
+        var ref3, results;
+        ref3 = this.props.collection.model.prototype.schema;
+        results = [];
+        for (k in ref3) {
+          v = ref3[k];
+          if (v.visible !== false) {
             results.push(React.createElement("th", {
               "ref": "th_" + k,
               "onClick": this.columnHeaderClickHandle.bind(this, k)
@@ -753,19 +790,14 @@
               "className": 'glyphicon glyphicon-sort-by-attributes-alt pull-right'
             }) : void 0)));
           }
-          return results;
-        }).call(this);
-        debugger;
-        if ((this.props.buttons.rowButtons != null) && _.size(this.props.buttons.rowButtons) > 0) {
-          columns.push(React.createElement("th", {
-            "style": {
-              width: 160,
-              minWidth: 200
-            }
-          }));
         }
-        return columns;
-      }).call(this))), React.createElement("tbody", null, (function() {
+        return results;
+      }).call(this), (this.props.buttons.rowButtons != null) && _.size(this.props.buttons.rowButtons) > 0 ? columns.push(React.createElement("th", {
+        "style": {
+          width: 160,
+          minWidth: 200
+        }
+      })) : void 0, columns)), React.createElement("tbody", null, (function() {
         var i, len, results;
         results = [];
         for (i = 0, len = pageCollection.length; i < len; i++) {
@@ -778,6 +810,9 @@
             results1 = [];
             for (k in ref3) {
               v = ref3[k];
+              if (!(v.visible !== false)) {
+                continue;
+              }
               if (((ref4 = this.state.editCell) != null ? ref4.model : void 0) === model && this.state.editCell.key === k) {
                 style = {
                   padding: 0,
@@ -800,7 +835,6 @@
           }).call(this), React.createElement("td", null, React.createElement(ButtonGroup, {
             "bsSize": "xsmall"
           }, ((function() {
-            debugger;
             var j, len1, ref3, ref4, results1;
             buttons = (function() {
               var ref3, results1;
@@ -818,8 +852,8 @@
               ref3 = buttons.slice(0, +buttons.length + 1 || 9e9);
               results1 = [];
               for (j = 0, len1 = ref3.length; j < len1; j++) {
-                btn = ref3[j];
-                btnProps = this.getButtonProps(btn);
+                btnInfo = ref3[j];
+                btnProps = this.getButtonProps(btnInfo);
                 results1.push(React.createElement(Button, {
                   "onClick": btnProps.clickHandle.bind(this, model),
                   "bsStyle": btnProps.bsStyle
@@ -892,9 +926,7 @@
         "bsSize": "large"
       }, React.createElement(Modal.Header, {
         "closeButton": true
-      }, React.createElement(Modal.Title, null, "\u8be6\u60c5")), React.createElement(Modal.Body, {
-        "ref": "modalBody"
-      }, React.createElement(Grid, {
+      }, React.createElement(Modal.Title, null, "\u8be6\u60c5")), React.createElement(Modal.Body, null, React.createElement(Grid, {
         "fluid": true
       }, React.createElement(Row, {
         "className": "show-grid"
@@ -914,13 +946,13 @@
           }
           return results;
         }
-      }).call(this))))), React.createElement(Modal.Footer, null, React.createElement(Button, {
+      }).call(this))))), React.createElement(Modal.Footer, null, ((ref3 = this.state.action) === "add" || ref3 === "edit" ? React.createElement("div", null, React.createElement(Button, {
         "bsStyle": "primary",
         "onClick": this.saveButtonHandle
       }, "\u4fdd\u5b58"), React.createElement(Button, {
         "bsStyle": "default",
         "onClick": this.hideModalHandle
-      }, "\u53d6\u6d88"))), React.createElement(Modal, {
+      }, "\u53d6\u6d88")) : void 0))), React.createElement(Modal, {
         "show": this.state.showConfirmModal,
         "onHide": this.hideConfirmModalHandle,
         "bsSize": "sm"
