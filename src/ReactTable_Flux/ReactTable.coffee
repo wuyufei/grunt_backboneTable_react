@@ -59,6 +59,7 @@ DateTimeCellMixin =
     if @state.showModal
       modalBody = $(React.findDOMNode(@refs.modalBody))
       for k,v of schema when v.type.toLowerCase() is "datetime"
+          debugger
           dtpControls = modalBody.find(".dtpControl_#{k}")
           dtpControls.datetimepicker {format:v.format,language:"zh-CN",weekStart:1,todayBtn:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"}
           dtpControls.off "changeDate"
@@ -226,7 +227,7 @@ CreateCellContentMixin =
     btnProps
   getColumnsWidth:->
     cellWidths={}
-    for k,v of @props.collection.model::schema
+    for k,v of @props.collection.model::schema when v.visible isnt false
       $el = $(@refs["th_#{k}"].getDOMNode())
       cellWidths[k] = $el.outerWidth()
     @cellWidths = cellWidths
@@ -438,7 +439,7 @@ ReactTable = React.createClass
           <Modal.Header closeButton>
             <Modal.Title>详情</Modal.Title>
           </Modal.Header>
-          <Modal.Body>
+          <Modal.Body ref="modalBody">
             <Grid fluid=true >
               <Row className="show-grid">
                 {

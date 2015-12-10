@@ -109,6 +109,7 @@
           if (!(v.type.toLowerCase() === "datetime")) {
             continue;
           }
+          debugger;
           dtpControls = modalBody.find(".dtpControl_" + k);
           dtpControls.datetimepicker({
             format: v.format,
@@ -523,6 +524,9 @@
       ref1 = this.props.collection.model.prototype.schema;
       for (k in ref1) {
         v = ref1[k];
+        if (!(v.visible !== false)) {
+          continue;
+        }
         $el = $(this.refs["th_" + k].getDOMNode());
         cellWidths[k] = $el.outerWidth();
       }
@@ -926,7 +930,9 @@
         "bsSize": "large"
       }, React.createElement(Modal.Header, {
         "closeButton": true
-      }, React.createElement(Modal.Title, null, "\u8be6\u60c5")), React.createElement(Modal.Body, null, React.createElement(Grid, {
+      }, React.createElement(Modal.Title, null, "\u8be6\u60c5")), React.createElement(Modal.Body, {
+        "ref": "modalBody"
+      }, React.createElement(Grid, {
         "fluid": true
       }, React.createElement(Row, {
         "className": "show-grid"
