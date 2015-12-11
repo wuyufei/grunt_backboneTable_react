@@ -207,8 +207,8 @@ Form = FormView.extend
                                     </div>
                                   </div>
                                   <div class="col-md-12 col-sm-12" style="margin-top:10px;">
-                                    <label class="col-sm-4 control-label">途经港</label>
-                                    <div class="col-sm-8" data-container="tjg">
+                                    <label class="col-sm-2 control-label">途经港</label>
+                                    <div class="col-sm-10" data-container="tjg">
 
                                     </div>
                                   </div>
@@ -217,23 +217,48 @@ Form = FormView.extend
   renderComplete:->
     that = @
     selectControl = that.$el.find("[data-field=education]")
+    #绑定下拉框
     for item in that.model.schema.education.options
       selectControl.append """<option value="#{item.val}">#{item.label}</option> """
     selectControl.val that.model.get("education")
+    #添加途经港控件
     tjgContainer = @$el.find("[data-container=tjg]")
-    tjgContainer.append """<div class="input-group">
+    tjgContainer.on "click","[data-command=remove]",(e)->
+      return if tjgContainer.find(".input-group").length <= 1
+      $(this).closest(".input-group").remove()
+      #为最后一个添加add按钮
+      span = tjgContainer.children(".input-group").last().find("span").first()
+      if span.has("[data-command=add]").length < 1
+        span.append """<button type="button" class="btn btn-default" data-command="add">
+                        <span class="glyphicon glyphicon-plus"></span>
+                       </button> """
+    tjgContainer.on "click","[data-command=add]",(e)->
+      #删除原add按钮
+      tjgContainer.find("[data-command=add]").remove()
+      tjgContainer.append """<div class="input-group col-md-3" style="float:left;">
+                                <input type="text" data-cid="c405" class="dtpControl_birthday form_datetime form-control">
+                                <span class="input-group-btn">
+                                  <button type="button" class="btn btn-default" data-command="remove">
+                                    <span class="glyphicon glyphicon-remove"></span>
+                                  </button>
+                                  <button type="button" class="btn btn-default" data-command="add">
+                                    <span class="glyphicon glyphicon-plus"></span>
+                                  </button>
+                                </span>
+                              </div> """
+    tjgContainer.append """<div class="input-group col-md-3" style="float:left;">
                               <input type="text" data-cid="c405" class="dtpControl_birthday form_datetime form-control">
                               <span class="input-group-btn">
-                                <button type="button" class="btn btn-default">
+                                <button type="button" class="btn btn-default" data-command="remove">
                                   <span class="glyphicon glyphicon-remove"></span>
                                 </button>
-                                <button type="button" class="btn btn-default">
-                                  <span class="glyphicon glyphicon-remove"></span>
+                                <button type="button" class="btn btn-default" data-command="add">
+                                  <span class="glyphicon glyphicon-plus"></span>
                                 </button>
                               </span>
                             </div> """
     setTimeout ->
       format = that.model.schema.birthday.format ? "yyyy-mm-dd"
       that.$el.find("[data-field=birthday]").datetimepicker
-        format:format,language:"zh-CN",weekStart:1,todayBtn:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"
+        format:format,language:"zh-CN",weekStart:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"
     ,500
