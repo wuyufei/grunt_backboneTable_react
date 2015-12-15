@@ -32,7 +32,7 @@ User = Backbone.Model.extend
       title:"姓名"
       readonly:true
       readonlyOnModal:false
-      visible:false
+
     age:
       type:"Text"
       title:"年龄"
@@ -134,6 +134,31 @@ FormView = Backbone.View.extend
       "click [data-command=save]":"save"
     initialize:(options)->
         @options = _.extend {},options
+
+    bindingData:->
+      that = @
+      for k,v of @model.schema
+        control = @$el.find("[data-field=#{k}]")
+        switch v.type.toLowerCase()
+          when "text"
+            control.val(@model.get(k))
+          when "select"
+            for item in @model.schema[k].options
+              control.append """<option value="#{item.val}">#{item.label}</option> """
+            control.val @model.get(k)
+          when "datetime"
+            control.val @model.get(k)
+            setTimeout do (control)->
+              ->
+                format = that.model.schema[k].format ? "yyyy-mm-dd"
+                control.datetimepicker
+                  format:format,language:"zh-CN",weekStart:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"
+            ,500
+          when "checkbox"
+            if @model.get(k) is "1"
+              control.prop("checked",true)
+          else
+            control.val(@model.get(k))
     validate:->
       isValidate = true
       val = {}
@@ -177,6 +202,7 @@ FormView = Backbone.View.extend
         debugger
         @$el.find(".modal-body").append @formTemplate model:@model
         this.$el.modal("show")
+        @bindingData()
         this.renderComplete?()
 
 Form = FormView.extend
@@ -185,19 +211,19 @@ Form = FormView.extend
                                   <div class="col-md-6 col-sm-12" style="margin-top:10px;">
                                     <label class="col-sm-4 control-label">姓名</label>
                                     <div class="col-sm-8">
-                                      <input type="text" class="form-control" data-field="name"  value="<%=model.get("name") %>" />
+                                      <input type="text" class="form-control" data-field="name" />
                                     </div>
                                   </div>
                                   <div class="col-md-6 col-sm-12" style="margin-top:10px;">
                                     <label class="col-sm-4 control-label">年龄</label>
                                     <div class="col-sm-8">
-                                      <input type="text" class="form-control" data-field="age" value="<%=model.get("age")%>" />
+                                      <input type="text" class="form-control" data-field="age"  />
                                     </div>
                                   </div>
                                   <div class="col-md-6 col-sm-12" style="margin-top:10px;">
                                     <label class="col-sm-4 control-label">出生日期</label>
                                     <div class="col-sm-8">
-                                      <input type="text" class="form-control" data-field="birthday" value="<%=model.get("birthday")%>" />
+                                      <input type="text" class="form-control" data-field="birthday"  />
                                     </div>
                                   </div>
                                   <div class="col-md-6 col-sm-12" style="margin-top:10px;">
@@ -205,6 +231,12 @@ Form = FormView.extend
                                     <div class="col-sm-8">
                                       <select type="select" class="form-control" data-field="education"/>
                                     </div>
+                                  </div>
+                                  <div class="checkbox">
+                                    <label class="">
+                                      <input type="checkbox" data-field="sb" label="工作标志" class="">
+                                        <span>工作标志</span>
+                                      </label>
                                   </div>
                                   <div class="col-md-12 col-sm-12" style="margin-top:10px;">
                                     <label class="col-sm-2 control-label">途经港</label>
@@ -216,11 +248,6 @@ Form = FormView.extend
                               </div>  """
   renderComplete:->
     that = @
-    selectControl = that.$el.find("[data-field=education]")
-    #绑定下拉框
-    for item in that.model.schema.education.options
-      selectControl.append """<option value="#{item.val}">#{item.label}</option> """
-    selectControl.val that.model.get("education")
     #添加途经港控件
     tjgContainer = @$el.find("[data-container=tjg]")
     tjgContainer.on "click","[data-command=remove]",(e)->
@@ -257,8 +284,3 @@ Form = FormView.extend
                                 </button>
                               </span>
                             </div> """
-    setTimeout ->
-      format = that.model.schema.birthday.format ? "yyyy-mm-dd"
-      that.$el.find("[data-field=birthday]").datetimepicker
-        format:format,language:"zh-CN",weekStart:1,autoclose:1,todayHighLight: 1,startView: 2,minView: 2,forceParse: 0,todayBtn: true,pickerPosition:"bottom-right"
-    ,500

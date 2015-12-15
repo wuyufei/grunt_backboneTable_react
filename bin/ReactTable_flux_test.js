@@ -41,8 +41,7 @@
         type: "Text",
         title: "姓名",
         readonly: true,
-        readonlyOnModal: false,
-        visible: false
+        readonlyOnModal: false
       },
       age: {
         type: "Text",
@@ -176,6 +175,60 @@
     initialize: function(options) {
       return this.options = _.extend({}, options);
     },
+    bindingData: function() {
+      var control, i, item, k, len, ref, ref1, results, that, v;
+      that = this;
+      ref = this.model.schema;
+      results = [];
+      for (k in ref) {
+        v = ref[k];
+        control = this.$el.find("[data-field=" + k + "]");
+        switch (v.type.toLowerCase()) {
+          case "text":
+            results.push(control.val(this.model.get(k)));
+            break;
+          case "select":
+            ref1 = this.model.schema[k].options;
+            for (i = 0, len = ref1.length; i < len; i++) {
+              item = ref1[i];
+              control.append("<option value=\"" + item.val + "\">" + item.label + "</option> ");
+            }
+            results.push(control.val(this.model.get(k)));
+            break;
+          case "datetime":
+            control.val(this.model.get(k));
+            results.push(setTimeout((function(control) {
+              return function() {
+                var format, ref2;
+                format = (ref2 = that.model.schema[k].format) != null ? ref2 : "yyyy-mm-dd";
+                return control.datetimepicker({
+                  format: format,
+                  language: "zh-CN",
+                  weekStart: 1,
+                  autoclose: 1,
+                  todayHighLight: 1,
+                  startView: 2,
+                  minView: 2,
+                  forceParse: 0,
+                  todayBtn: true,
+                  pickerPosition: "bottom-right"
+                });
+              };
+            })(control), 500));
+            break;
+          case "checkbox":
+            if (this.model.get(k) === "1") {
+              results.push(control.prop("checked", true));
+            } else {
+              results.push(void 0);
+            }
+            break;
+          default:
+            results.push(control.val(this.model.get(k)));
+        }
+      }
+      return results;
+    },
     validate: function() {
       var el, error, isValidate, k, ref, v, val;
       isValidate = true;
@@ -219,22 +272,16 @@
         model: this.model
       }));
       this.$el.modal("show");
+      this.bindingData();
       return typeof this.renderComplete === "function" ? this.renderComplete() : void 0;
     }
   });
 
   Form = FormView.extend({
-    formTemplate: _.template(" <div class=\"row\">\n  <form class=\"form-horizontal\" role=\"form\">\n    <div class=\"col-md-6 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-4 control-label\">姓名</label>\n      <div class=\"col-sm-8\">\n        <input type=\"text\" class=\"form-control\" data-field=\"name\"  value=\"<%=model.get(\"name\") %>\" />\n      </div>\n    </div>\n    <div class=\"col-md-6 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-4 control-label\">年龄</label>\n      <div class=\"col-sm-8\">\n        <input type=\"text\" class=\"form-control\" data-field=\"age\" value=\"<%=model.get(\"age\")%>\" />\n      </div>\n    </div>\n    <div class=\"col-md-6 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-4 control-label\">出生日期</label>\n      <div class=\"col-sm-8\">\n        <input type=\"text\" class=\"form-control\" data-field=\"birthday\" value=\"<%=model.get(\"birthday\")%>\" />\n      </div>\n    </div>\n    <div class=\"col-md-6 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-4 control-label\">学历</label>\n      <div class=\"col-sm-8\">\n        <select type=\"select\" class=\"form-control\" data-field=\"education\"/>\n      </div>\n    </div>\n    <div class=\"col-md-12 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-2 control-label\">途经港</label>\n      <div class=\"col-sm-10\" data-container=\"tjg\">\n\n      </div>\n    </div>\n  </form>\n</div>  "),
+    formTemplate: _.template(" <div class=\"row\">\n  <form class=\"form-horizontal\" role=\"form\">\n    <div class=\"col-md-6 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-4 control-label\">姓名</label>\n      <div class=\"col-sm-8\">\n        <input type=\"text\" class=\"form-control\" data-field=\"name\" />\n      </div>\n    </div>\n    <div class=\"col-md-6 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-4 control-label\">年龄</label>\n      <div class=\"col-sm-8\">\n        <input type=\"text\" class=\"form-control\" data-field=\"age\"  />\n      </div>\n    </div>\n    <div class=\"col-md-6 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-4 control-label\">出生日期</label>\n      <div class=\"col-sm-8\">\n        <input type=\"text\" class=\"form-control\" data-field=\"birthday\"  />\n      </div>\n    </div>\n    <div class=\"col-md-6 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-4 control-label\">学历</label>\n      <div class=\"col-sm-8\">\n        <select type=\"select\" class=\"form-control\" data-field=\"education\"/>\n      </div>\n    </div>\n    <div class=\"checkbox\">\n      <label class=\"\">\n        <input type=\"checkbox\" data-field=\"sb\" label=\"工作标志\" class=\"\">\n          <span>工作标志</span>\n        </label>\n    </div>\n    <div class=\"col-md-12 col-sm-12\" style=\"margin-top:10px;\">\n      <label class=\"col-sm-2 control-label\">途经港</label>\n      <div class=\"col-sm-10\" data-container=\"tjg\">\n\n      </div>\n    </div>\n  </form>\n</div>  "),
     renderComplete: function() {
-      var i, item, len, ref, selectControl, that, tjgContainer;
+      var that, tjgContainer;
       that = this;
-      selectControl = that.$el.find("[data-field=education]");
-      ref = that.model.schema.education.options;
-      for (i = 0, len = ref.length; i < len; i++) {
-        item = ref[i];
-        selectControl.append("<option value=\"" + item.val + "\">" + item.label + "</option> ");
-      }
-      selectControl.val(that.model.get("education"));
       tjgContainer = this.$el.find("[data-container=tjg]");
       tjgContainer.on("click", "[data-command=remove]", function(e) {
         var span;
@@ -251,23 +298,7 @@
         tjgContainer.find("[data-command=add]").remove();
         return tjgContainer.append("<div class=\"input-group col-md-3\" style=\"float:left;\">\n  <input type=\"text\" data-cid=\"c405\" class=\"dtpControl_birthday form_datetime form-control\">\n  <span class=\"input-group-btn\">\n    <button type=\"button\" class=\"btn btn-default\" data-command=\"remove\">\n      <span class=\"glyphicon glyphicon-remove\"></span>\n    </button>\n    <button type=\"button\" class=\"btn btn-default\" data-command=\"add\">\n      <span class=\"glyphicon glyphicon-plus\"></span>\n    </button>\n  </span>\n</div> ");
       });
-      tjgContainer.append("<div class=\"input-group col-md-3\" style=\"float:left;\">\n  <input type=\"text\" data-cid=\"c405\" class=\"dtpControl_birthday form_datetime form-control\">\n  <span class=\"input-group-btn\">\n    <button type=\"button\" class=\"btn btn-default\" data-command=\"remove\">\n      <span class=\"glyphicon glyphicon-remove\"></span>\n    </button>\n    <button type=\"button\" class=\"btn btn-default\" data-command=\"add\">\n      <span class=\"glyphicon glyphicon-plus\"></span>\n    </button>\n  </span>\n</div> ");
-      return setTimeout(function() {
-        var format, ref1;
-        format = (ref1 = that.model.schema.birthday.format) != null ? ref1 : "yyyy-mm-dd";
-        return that.$el.find("[data-field=birthday]").datetimepicker({
-          format: format,
-          language: "zh-CN",
-          weekStart: 1,
-          autoclose: 1,
-          todayHighLight: 1,
-          startView: 2,
-          minView: 2,
-          forceParse: 0,
-          todayBtn: true,
-          pickerPosition: "bottom-right"
-        });
-      }, 500);
+      return tjgContainer.append("<div class=\"input-group col-md-3\" style=\"float:left;\">\n  <input type=\"text\" data-cid=\"c405\" class=\"dtpControl_birthday form_datetime form-control\">\n  <span class=\"input-group-btn\">\n    <button type=\"button\" class=\"btn btn-default\" data-command=\"remove\">\n      <span class=\"glyphicon glyphicon-remove\"></span>\n    </button>\n    <button type=\"button\" class=\"btn btn-default\" data-command=\"add\">\n      <span class=\"glyphicon glyphicon-plus\"></span>\n    </button>\n  </span>\n</div> ");
     }
   });
 
