@@ -197,7 +197,7 @@
       return this.getColumnsWidth();
     },
     getCellContent: function(model, key) {
-      var content, error, isEdit, opt, ref, ref1, ref2, ref3, ref4, schema;
+      var content, displayValue, error, format, isEdit, opt, ref, ref1, ref2, ref3, ref4, ref5, schema;
       schema = model.schema[key];
       ref = key + model.cid;
       if (this.props.readonly === true) {
@@ -209,6 +209,7 @@
       }
       if (isEdit) {
         content = (function() {
+          var ref3;
           switch (schema.type.toLowerCase()) {
             case "text":
               return React.createElement("input", {
@@ -263,6 +264,8 @@
                 "autoFocus": "true"
               });
             case "datetime":
+              format = ((ref3 = schema.format) != null ? ref3 : "YYYY-MM-DD").toUpperCase();
+              displayValue = $.trim(this.state.editCell.value) === "" ? "" : moment(this.state.editCell.value).format(format);
               return React.createElement("div", {
                 "className": "input-group input-append date form_datetime"
               }, React.createElement("input", {
@@ -273,7 +276,7 @@
                 "className": "form-control dtpControl_" + key,
                 "autoFocus": "true",
                 "data-cid": model.cid,
-                "value": this.state.editCell.value,
+                "value": displayValue,
                 "type": "text",
                 "onChange": this.onCellValueChange.bind(this, model, key),
                 "readOnly": "readonly"
@@ -299,9 +302,13 @@
           content = React.createElement("span", null, ((ref3 = _.findWhere(schema.options, {
             val: model.get(key)
           })) != null ? ref3.label : void 0));
+        } else if (schema.type.toLowerCase() === "datetime") {
+          format = ((ref4 = schema.format) != null ? ref4 : "YYYY-MM-DD").toUpperCase();
+          displayValue = $.trim(model.get(key)) === "" ? "" : moment(model.get(key)).format(format);
+          content = React.createElement("span", null, displayValue);
         }
       }
-      if (((ref4 = this.state.error) != null ? ref4.model : void 0) === model && this.state.error.key === key) {
+      if (((ref5 = this.state.error) != null ? ref5.model : void 0) === model && this.state.error.key === key) {
         error = React.createElement(Overlay, {
           "show": true,
           "target": ((function(_this) {
@@ -316,7 +323,7 @@
       return content;
     },
     getModalFieldContent: function(model, key) {
-      var addonBefore, content, emptyValue, error, opt, options, ref, ref1, ref2, ref3, schema, timeClearButton, type;
+      var addonBefore, content, dateFormat, displayValue, emptyValue, error, opt, options, ref, ref1, ref2, ref3, schema, timeClearButton, type;
       ref = "modalForm" + key + model.cid;
       schema = model.schema[key];
       type = schema.type.toLowerCase();
@@ -336,6 +343,7 @@
         addonBefore = schema.title;
       }
       content = (function() {
+        var ref3;
         switch (type) {
           case "text":
             return React.createElement(Input, {
@@ -365,6 +373,8 @@
               return results;
             })()));
           case "datetime":
+            dateFormat = ((ref3 = schema.format) != null ? ref3 : "YYYY-MM-DD").toUpperCase();
+            displayValue = $.trim(this.state.modalFormValues[key]) === "" ? "" : moment(this.state.modalFormValues[key]).format(dateFormat);
             return React.createElement(Input, {
               "type": "text",
               "ref": ref,
@@ -372,7 +382,7 @@
               "className": "dtpControl_" + key + " form_datetime",
               "addonBefore": schema.title,
               "buttonAfter": timeClearButton,
-              "value": this.state.modalFormValues[key]
+              "value": displayValue
             });
           case "checkbox":
             return React.createElement(Input, {
@@ -651,13 +661,16 @@
       }
     },
     columnHeaderClickHandle: function(name) {
+      debugger;
       var dir;
-      dir = this.state.sortField === name && this.state.sortDir === "asc" ? dir = "desc" : dir = "asc";
-      this.setState({
-        sortField: name,
-        sortDir: dir
-      });
-      return this.sortList = this.props.getSortList(name, dir);
+      if (this.props.allowSorting !== false) {
+        dir = this.state.sortField === name && this.state.sortDir === "asc" ? dir = "desc" : dir = "asc";
+        this.setState({
+          sortField: name,
+          sortDir: dir
+        });
+        return this.sortList = this.props.getSortList(name, dir);
+      }
     },
     pageChangeHandle: function(event, selectedEvent) {
       return this.setState({
@@ -723,7 +736,7 @@
       }
     },
     render: function() {
-      var btnInfo, btnProps, buttons, columns, displayedPageRecordLength, displayedPagesLength, k, model, obj, pageCollection, pageCount, ref1, ref2, ref3, result, sortCollection, style, tmp1, v;
+      var btnInfo, btnProps, buttonCellWidth, buttons, columns, displayedPageRecordLength, displayedPagesLength, k, model, obj, pageCollection, pageCount, ref1, ref2, ref3, result, sortCollection, style, tmp1, v;
       if (this.props.allowPage !== false) {
         displayedPageRecordLength = (ref1 = this.props.displayedPageRecordLength) != null ? ref1 : 10;
         displayedPagesLength = (ref2 = this.props.displayedPagesLength) != null ? ref2 : 10;
@@ -796,10 +809,20 @@
           }
         }
         return results;
-      }).call(this), (this.props.buttons.rowButtons != null) && _.size(this.props.buttons.rowButtons) > 0 ? columns.push(React.createElement("th", {
+      }).call(this), buttons = (function() {
+        var ref3, results;
+        ref3 = this.props.buttons.rowButtons;
+        results = [];
+        for (k in ref3) {
+          v = ref3[k];
+          obj = _.extend({}, v);
+          obj.command = k;
+          results.push(obj);
+        }
+        return results;
+      }).call(this), buttonCellWidth = 70 * (buttons.length > 3 ? 3 : buttons.length) + 10, (this.props.buttons.rowButtons != null) && _.size(this.props.buttons.rowButtons) > 0 ? columns.push(React.createElement("th", {
         "style": {
-          width: 160,
-          minWidth: 200
+          width: buttonCellWidth
         }
       })) : void 0, columns)), React.createElement("tbody", null, (function() {
         var i, len, results;
@@ -966,7 +989,7 @@
         "closeButton": true
       }, React.createElement(Modal.Title, null, "\u63d0\u793a")), React.createElement(Modal.Body, null, React.createElement("h4", {
         "className": "text-center"
-      }, "\u786e\u8ba4\u5220\u9664\u5417")), React.createElement(Modal.Footer, null, React.createElement(Button, {
+      }, "\u786e\u8ba4\u5220\u9664\u5417\uff1f")), React.createElement(Modal.Footer, null, React.createElement(Button, {
         "bsStyle": "primary",
         "onClick": this.deleteConfirmButtonClickHandle
       }, "\u786e\u5b9a"), React.createElement(Button, {

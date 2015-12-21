@@ -112,16 +112,23 @@ CreateCellContentMixin =
                                         {<option value={opt.val ? " "}>{opt.label}</option> for opt in schema.options}
                                       </select>
                   when "checkbox" then <input style={{height:32,marginTop:0}} className="form-control" type="checkbox" bsSize="small" checked={@state.editCell.value is "1"} onChange={@onCellValueChange.bind(@,model,key)} onBlur={@onCellEndEdit.bind(@,model,key)} autoFocus="true"/>
-                  when "datetime" then <div className="input-group input-append date form_datetime" >
-                                           <input ref={ref} style={{height:32}} className="form-control dtpControl_#{key}" autoFocus="true" data-cid={model.cid} value={@state.editCell.value}  type="text" onChange={@onCellValueChange.bind(@,model,key)}  readOnly="readonly"/>
-                                           <span className="input-group-addon add-on" onClick={@onCellEndEdit.bind(@,model,key)}><i  className="glyphicon glyphicon-remove" ></i></span>
-                                      </div>
+                  when "datetime"
+                    format = (schema.format ? "YYYY-MM-DD").toUpperCase()
+                    displayValue = if $.trim(@state.editCell.value) is "" then "" else  moment(@state.editCell.value).format(format)
+                    <div className="input-group input-append date form_datetime" >
+                                         <input ref={ref} style={{height:32}} className="form-control dtpControl_#{key}" autoFocus="true" data-cid={model.cid} value={displayValue}  type="text" onChange={@onCellValueChange.bind(@,model,key)}  readOnly="readonly"/>
+                                         <span className="input-group-addon add-on" onClick={@onCellEndEdit.bind(@,model,key)}><i  className="glyphicon glyphicon-remove" ></i></span>
+                                    </div>
     else
       content =<span>{model.get(key)}</span>
       if schema.type.toLowerCase() is "checkbox"
         if model.get(key) is "1" then content = <span className="glyphicon glyphicon-ok"></span> else content = <span/>
       else if schema.type.toLowerCase() is "select"
         content =<span>{_.findWhere(schema.options,val:model.get(key))?.label}</span>
+      else if schema.type.toLowerCase() is "datetime"
+        format = (schema.format ? "YYYY-MM-DD").toUpperCase()
+        displayValue = if $.trim(model.get(key)) is "" then "" else moment(model.get(key)).format(format)
+        content =<span>{displayValue}</span>
     if @state.error?.model is model and @state.error.key is key
       error = <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs[ref])} placement="right">
                     <Popover>{@state.error.msg}</Popover>
@@ -145,7 +152,10 @@ CreateCellContentMixin =
                               {options = for opt in schema.options
                                 <option value={opt.val}>{opt.label}</option>}
                            </Input>
-        when "datetime"then <Input type="text" ref={ref} data-cid={model.cid}  className="dtpControl_#{key} form_datetime" addonBefore={schema.title} buttonAfter={timeClearButton} value={@state.modalFormValues[key]}/>
+        when "datetime"
+           dateFormat = (schema.format ? "YYYY-MM-DD").toUpperCase()
+           displayValue = if $.trim(@state.modalFormValues[key]) is "" then "" else  moment(@state.modalFormValues[key]).format(dateFormat)
+           <Input type="text" ref={ref} data-cid={model.cid}  className="dtpControl_#{key} form_datetime" addonBefore={schema.title} buttonAfter={timeClearButton} value={displayValue}/>
         when "checkbox" then <Input type="checkbox" ref={ref} bsSize="small" label={schema.title} checked={@state.modalFormValues[key] is "1"} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
         else  <Input type="text" addonBefore={schema.title} ref={ref} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
 
@@ -305,9 +315,11 @@ ReactTable = React.createClass
       unless @state.editCell?.model is model and @state.editCell.key is key
         @setState editCell:{model:model,key:key,value:model.get(key)}
   columnHeaderClickHandle:(name)->
-    dir = if @state.sortField is name and @state.sortDir is "asc" then dir = "desc" else dir = "asc"
-    @setState sortField:name,sortDir:dir
-    @sortList =  @props.getSortList(name,dir)
+    debugger
+    if @props.allowSorting isnt false
+      dir = if @state.sortField is name and @state.sortDir is "asc" then dir = "desc" else dir = "asc"
+      @setState sortField:name,sortDir:dir
+      @sortList =  @props.getSortList(name,dir)
   pageChangeHandle:(event,selectedEvent)->
     @setState activePage:selectedEvent.eventKey
   buttonClickHandle:(command,model,e)->
@@ -373,8 +385,14 @@ ReactTable = React.createClass
                                         <i className='glyphicon glyphicon-sort-by-attributes-alt pull-right'/>
                                 }
                               </th>
+                    #把对象转换为数组
+                    buttons = for k,v of @props.buttons.rowButtons
+                                obj = _.extend {},v
+                                obj.command = k
+                                obj
+                    buttonCellWidth = 70 * (if buttons.length>3 then 3 else buttons.length) + 10
                     if @props.buttons.rowButtons? and _.size(@props.buttons.rowButtons)>0
-                      columns.push <th style={{width:160,minWidth:200}}></th>
+                      columns.push <th style={{width:buttonCellWidth}}></th>
                     columns
                 }
               </thead>
@@ -467,7 +485,7 @@ ReactTable = React.createClass
             <Modal.Title>提示</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <h4 className="text-center">确认删除吗</h4>
+            <h4 className="text-center">确认删除吗？</h4>
           </Modal.Body>
           <Modal.Footer>
                     <Button bsStyle="primary" onClick={@deleteConfirmButtonClickHandle}>确定</Button>

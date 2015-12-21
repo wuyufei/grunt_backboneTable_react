@@ -92,6 +92,7 @@ table = new BackboneTable
   displayedPageRecordLength:10
   displayedPagesLength:10
   allowPage:true
+  allowSorting:false
   cellClick:(model,key)->
     debugger
   cellDoubleClick:(model,key)->
