@@ -6,7 +6,7 @@
   window.BackboneTable = BackboneTable = Backbone.View.extend({
     initialize: function(options) {
       this.options = _.extend({}, options);
-      return this.listenTo(this.collection, "sync destroy add", this.render);
+      return this.listenTo(this.collection, "sync destroy add remove", this.render);
     },
     getSortList: function(field, dir) {
       var getSortValue, schema, sortModels, that;
@@ -93,10 +93,7 @@
       return this.createDateTimePickerControl();
     },
     componentDidUpdate: function() {
-      var ref1;
-      if ((ref1 = this.state.action) === "add" || ref1 === "edit") {
-        return this.createDateTimePickerControl();
-      }
+      return this.createDateTimePickerControl();
     },
     createDateTimePickerControl: function() {
       var dtpControls, el, k, modalBody, ref1, results, schema, that, v;
@@ -286,6 +283,20 @@
               }, React.createElement("i", {
                 "className": "glyphicon glyphicon-remove"
               })));
+            default:
+              return React.createElement("input", {
+                "style": {
+                  height: 32
+                },
+                "ref": ref,
+                "className": "form-control",
+                "type": "text",
+                "bsSize": "small",
+                "value": this.state.editCell.value,
+                "onChange": this.onCellValueChange.bind(this, model, key),
+                "onBlur": this.onCellEndEdit.bind(this, model, key),
+                "autoFocus": "true"
+              });
           }
         }).call(this);
       } else {
@@ -538,7 +549,7 @@
           continue;
         }
         $el = $(this.refs["th_" + k].getDOMNode());
-        cellWidths[k] = $el.outerWidth();
+        cellWidths[k] = $el.outerWidth() === 0 ? 120 : $el.outerWidth();
       }
       return this.cellWidths = cellWidths;
     },

@@ -4,7 +4,7 @@ window.BackboneTable = BackboneTable = Backbone.View.extend
   initialize:(options)->
     @options = _.extend {},options
     #监听事件
-    @listenTo @collection,"sync destroy add",@render
+    @listenTo @collection,"sync destroy add remove",@render
 
   getSortList:(field,dir)->
     that = @
@@ -51,7 +51,7 @@ DateTimeCellMixin =
   componentDidMount:->
     @createDateTimePickerControl()
   componentDidUpdate:->
-    if @state.action in ["add","edit"]
+    #if @state.action in ["add","edit"]
       @createDateTimePickerControl()
   createDateTimePickerControl:->
     that = @
@@ -119,6 +119,8 @@ CreateCellContentMixin =
                                          <input ref={ref} style={{height:32}} className="form-control dtpControl_#{key}" autoFocus="true" data-cid={model.cid} value={displayValue}  type="text" onChange={@onCellValueChange.bind(@,model,key)}  readOnly="readonly"/>
                                          <span className="input-group-addon add-on" onClick={@onCellEndEdit.bind(@,model,key)}><i  className="glyphicon glyphicon-remove" ></i></span>
                                     </div>
+                  else
+                    <input style={{height:32}} ref={ref} className="form-control" type="text" bsSize="small" value={@state.editCell.value} onChange={@onCellValueChange.bind(@,model,key)} onBlur={@onCellEndEdit.bind(@,model,key)} autoFocus="true"/>
     else
       content =<span>{model.get(key)}</span>
       if schema.type.toLowerCase() is "checkbox"
@@ -239,7 +241,7 @@ CreateCellContentMixin =
     cellWidths={}
     for k,v of @props.collection.model::schema when v.visible isnt false
       $el = $(@refs["th_#{k}"].getDOMNode())
-      cellWidths[k] = $el.outerWidth()
+      cellWidths[k] = if $el.outerWidth() is 0 then 120 else $el.outerWidth()
     @cellWidths = cellWidths
   getSortCollection:->
       that = @
