@@ -23,7 +23,7 @@
 	<script src="/lib/bootstrap-datetimepicker/js/locales/bootstrap-datetimepicker.zh-CN.js"></script>
 	<script src="//cdn.bootcss.com/underscore.js/1.8.3/underscore.js"></script>
 	<script src="//cdn.bootcss.com/backbone.js/1.2.2/backbone.js"></script>
-	<script src="//cdn.bootcss.com/bootstrap-contextmenu/0.3.3/bootstrap-contextmenu.js" </script>
+	<script src="//cdn.bootcss.com/bootstrap-contextmenu/0.3.3/bootstrap-contextmenu.js"> </script>
 	<script src="//cdn.bootcss.com/backbone.validation/0.11.5/backbone-validation.js"></script>
 	<script src="//cdn.bootcss.com/react/0.14.0-rc1/react-with-addons.js"></script>
 	<script src="/lib/Mock/mock.js" ></script>
@@ -35,16 +35,58 @@
 </head>
 
 <body>
-	<div id="container">
+	<div class="container-fluid">
+        <div class="row">
 
-	</div>
-	<div id="menu">
-			<ul class="dropdown-menu" role="menu">
-				<li><a  href="#">单天确认</a></li>
-				 <li><a  href="#">全部确认</a></li>
-				<li><a t href="#">取消</a></li>
-			</ul>
-	</div>
+            <ul class="breadcrumb">
+                <li>您的位置</li>
+                <li>引航员查询</li>
+                <li class="active">引航员公休轮休</li>
+            </ul>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label class="sr-only" for="exampleInputEmail3">日期</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">日期
+                        </span>
+                        <input type="text" readonly="readonly" class="form-control" id="txtStart">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-2">
+                    <button id="btnSearch" type="button" class="btn btn-info btn-block">
+                        查询
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-12" id="table">
+                hello
+            </div>
+        </div>
+        <div id="menu">
+            <ul class="dropdown-menu" role="menu">
+                <li><a href="#">单天确认</a></li>
+                <li><a href="#">全部确认</a></li>
+                <li><a t href="#">取消</a></li>
+            </ul>
+        </div>
+    </div>
+    <script type="text/javascript">
+        //初始化日期控件
+        $("#txtStart").datetimepicker({
+            format: "yyyy-mm",
+            language: "zh-CN",
+            weekStart: 1,
+            todayBtn: 1,
+            autoclose: 1,
+            todayHighLight: 1,
+            startView: 2,
+            minView: 2,
+            forceParse: 0
+        });
+    </script>
+    <script src="Scripts/CoffeeScript/PilotGxlx/PilotGxlx.js"></script>
 	<script src="/bin/GongXiuLx.js"></script>
 	<script src="http://localhost:35729/livereload.js"></script>
 </body>

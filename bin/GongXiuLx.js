@@ -1,17 +1,23 @@
 (function() {
-  var Collection, GXCell, GXRow, GXTable, Model, list, tableProps, template;
+  var Collection, GXCell, GXRow, GXTable, Model, PageView, curMonth, curYear, curYearMonth, date, list, pageView;
 
   GXTable = React.createClass({
     refreshHandle: function(e) {},
     showReasonHandle: function(e) {},
+    _getDaysInMonth: function(year, month) {
+      var d;
+      month = parseInt(month, 10);
+      d = new Date(year, month, 0);
+      return d.getDate();
+    },
     renderColumns: function(isHeader) {
       var angle, class1, class2, i, lineStyle, monthDays, ref, ref1, tds, text1, text2;
-      ref = ["日期", "姓名", "text-right", "text-left", 31], text1 = ref[0], text2 = ref[1], class1 = ref[2], class2 = ref[3], angle = ref[4];
+      ref = ["日期", "姓名", "text-right", "text-left", 20], text1 = ref[0], text2 = ref[1], class1 = ref[2], class2 = ref[3], angle = ref[4];
       if (!isHeader) {
         ref1 = [text2, text1, class2, class1], text1 = ref1[0], text2 = ref1[1], class1 = ref1[2], class2 = ref1[3];
         angle = -angle;
       }
-      monthDays = 31;
+      monthDays = this._getDaysInMonth(this.props.year, this.props.month);
       tds = (function() {
         var j, ref2, results;
         results = [];
@@ -44,33 +50,34 @@
       }, text2)), tds);
     },
     renderRows: function() {
-      var index, j, len, model, monthDays, ref, results;
-      monthDays = 31;
+      var group, index, j, k, len, monthDays, results, v;
+      monthDays = this._getDaysInMonth(this.props.year, this.props.month);
       index = 0;
-      ref = this.props.collection.models;
+      group = this.props.collection.groupBy(function(m) {
+        return m.get("CHPILOTCODE");
+      });
       results = [];
-      for (j = 0, len = ref.length; j < len; j++) {
-        model = ref[j];
-        index++;
+      for (v = j = 0, len = group.length; j < len; v = ++j) {
+        k = group[v];
         results.push(React.createElement(GXRow, {
           "menu": menu,
           "monthDays": monthDays,
-          "model": model,
+          "models": v,
           "index": index
         }));
       }
       return results;
     },
-    renderFooter: function() {
+    renderFooter1: function() {
       var cells, count, i, model, monthDays;
-      monthDays = 31;
+      monthDays = this._getDaysInMonth(this.props.year, this.props.month);
       cells = (function() {
-        var j, k, len, ref, ref1, results;
+        var j, l, len, ref, ref1, results;
         results = [];
         for (i = j = 1, ref = monthDays; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
           ref1 = this.props.collection.models;
-          for (k = 0, len = ref1.length; k < len; k++) {
-            model = ref1[k];
+          for (l = 0, len = ref1.length; l < len; l++) {
+            model = ref1[l];
             count = _.filter(this.props.collection.models, function(m) {
               var day;
               day = parseInt(m.get("GXRQ").slice(-2));
@@ -91,6 +98,23 @@
         }
       }, "\u603b\u8ba1"), cells);
     },
+    renderFooter2: function() {
+      var cells, i, monthDays;
+      monthDays = this._getDaysInMonth(this.props.year, this.props.month);
+      cells = (function() {
+        var j, ref, results;
+        results = [];
+        for (i = j = 1, ref = monthDays; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
+          results.push(React.createElement("td", null, 25.));
+        }
+        return results;
+      })();
+      return React.createElement("tr", null, React.createElement("td", null), React.createElement("td", {
+        "style": {
+          fontWeigh: "bold"
+        }
+      }, "\u9650\u989d"), cells);
+    },
     render: function() {
       var monthDays, yearMoonth;
       monthDays = 31;
@@ -109,7 +133,7 @@
         "className": "table-responsive"
       }, React.createElement("table", {
         "className": "table table-bordered"
-      }, React.createElement("thead", null, this.renderColumns(true)), React.createElement("tbody", null, this.renderRows(), this.renderFooter()), React.createElement("thead", null, this.renderColumns(false)))));
+      }, React.createElement("thead", null, this.renderColumns(true)), React.createElement("tbody", null, this.renderRows(), this.renderFooter1(), this.renderFooter2()), React.createElement("thead", null, this.renderColumns(false)))));
     }
   });
 
@@ -124,18 +148,21 @@
         results = [];
         for (i = j = 1, ref = this.props.monthDays; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
           if (day === i) {
-            value = this.props.model.get("type");
+            value = this.props.model.get("SQLB");
           } else {
             value = "";
           }
           results.push(React.createElement(GXCell, {
             "value": value,
+            "day": i,
             "menu": this.props.menu
           }));
         }
         return results;
       }).call(this);
-      return React.createElement("tr", null, React.createElement("td", null, this.props.index), React.createElement("td", null, this.props.model.get("name")), cells);
+      return React.createElement("tr", null, React.createElement("td", null, this.props.index), React.createElement("td", null, this.props.model.get("VCPILOTNAME"), " ", React.createElement("span", {
+        "className": "badge"
+      }, "2")), cells);
     }
   });
 
@@ -177,6 +204,7 @@
       };
       return React.createElement("td", {
         "className": "text-center",
+        "title": this.props.day + "日",
         "onMouseOver": this.mouseOverHandle,
         "onMouseLeave": this.mouseLeaveHandle
       }, React.createElement("span", {
@@ -185,46 +213,80 @@
     }
   });
 
-  template = {
-    'gxsqList|20': [
-      {
-        name: '@cname',
-        GXRQ: '@date(2015-01-dd)',
-        SQSJ: '@date(2015-01-dd)',
-        'type|1': ["G", "L"]
-      }
-    ]
-  };
-
-  Mock.mock("t.tt", "get", function(options) {
-    var gxsqList;
-    gxsqList = Mock.mock(template).gxsqList;
-    return gxsqList;
-  });
-
   Model = Backbone.Model.extend({
-    idAttribute: "id",
-    url: "t.tt"
+    urlRoot: "/PilotGxWh.ashx"
   });
 
   Collection = Backbone.Collection.extend({
     model: Model,
-    url: "t.tt"
+    url: "/PilotGxWh.ashx"
   });
 
   list = new Collection();
 
+  date = new Date();
+
+  curYear = date.getFullYear();
+
+  curMonth = date.getMonth() + 1;
+
+  curYearMonth = curYear + "-" + curMonth;
+
+  $("#txtStart").val(curYearMonth);
+
   list.fetch({
     wait: true,
+    data: {
+      gxlx: curYearMonth
+    },
     async: false
   });
 
-  tableProps = {
-    year: 2015,
-    month: 1,
-    collection: list
-  };
+  PageView = Backbone.View.extend({
+    initialize: function(options) {
+      this.options = _.extend({}, options);
+      return this.listenTo(this.collection, "reset", this.render, this);
+    },
+    render: function() {
+      var reactComponent, tableProps;
+      tableProps = {
+        year: this.options.year,
+        month: this.options.month,
+        collection: this.collection
+      };
+      return reactComponent = React.render(React.createElement(GXTable, React.__spread({}, tableProps)), document.getElementById('table'));
+    }
+  });
 
-  React.render(React.createElement(GXTable, React.__spread({}, tableProps)), document.getElementById('container'));
+  pageView = new PageView({
+    el: $("#table"),
+    collection: list,
+    year: curYear,
+    month: curMonth
+  });
+
+  pageView.render();
+
+  $("#btnSearch").click(function() {
+    debugger;
+    var month, year, yearMonth;
+    date = $("#txtStart").val();
+    year = parseInt(date.substr(0, 4));
+    month = parseInt(date.substr(date.indexOf("-") + 1));
+    yearMonth = year + "-" + month;
+    _.extend(pageView.options, {
+      year: year,
+      month: month
+    });
+    list.fetch({
+      wait: true,
+      data: {
+        gxlx: yearMonth
+      },
+      async: false,
+      reset: true
+    });
+    return pageView.render();
+  });
 
 }).call(this);

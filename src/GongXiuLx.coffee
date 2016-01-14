@@ -1,13 +1,17 @@
 GXTable = React.createClass
   refreshHandle:(e)->
   showReasonHandle:(e)->
+  _getDaysInMonth:(year,month)->
+    month = parseInt(month,10)
+    d = new Date(year,month,0)
+    return d.getDate();
   renderColumns:(isHeader)->
-    [text1,text2,class1,class2,angle]=["日期","姓名","text-right","text-left",31]
+    [text1,text2,class1,class2,angle]=["日期","姓名","text-right","text-left",20]
     unless isHeader
       [text1,text2,class1,class2] = [text2,text1,class2,class1]
       angle = -angle
 
-    monthDays = 31
+    monthDays = @_getDaysInMonth(@props.year,@props.month)
     tds = for i in [1..monthDays]
             <th>{i}</th>
     lineStyle =
@@ -30,14 +34,20 @@ GXTable = React.createClass
       {tds}
     </tr>
   renderRows:->
-    monthDays = 31
+    monthDays = @_getDaysInMonth(@props.year,@props.month)
     index = 0
-    for model in @props.collection.models
-      index++
-      <GXRow menu={menu} monthDays={monthDays} model={model} index={index}/>
+    group = @props.collection.groupBy (m)->
+              m.get("CHPILOTCODE")
+    for k,v in group
+      <GXRow menu={menu} monthDays={monthDays} models={v} index={index}/>
 
-  renderFooter:->
-    monthDays = 31
+
+    # for model in @props.collection.models
+    #   index++
+    #   <GXRow menu={menu} monthDays={monthDays} model={model} index={index}/>
+
+  renderFooter1:->
+    monthDays = @_getDaysInMonth(@props.year,@props.month)
     cells = for i in [1..monthDays]
               for model in @props.collection.models
                 count= _.filter @props.collection.models,(m)->
@@ -47,6 +57,13 @@ GXTable = React.createClass
               <td>{count}</td>
     <tr>
       <td></td><td style={{fontWeigh:"bold"}}>总计</td>{cells}
+    </tr>
+  renderFooter2:->
+    monthDays = @_getDaysInMonth(@props.year,@props.month)
+    cells = for i in [1..monthDays]
+              <td>{25}</td>
+    <tr>
+      <td></td><td style={{fontWeigh:"bold"}}>限额</td>{cells}
     </tr>
   render:->
     monthDays = 31
@@ -64,7 +81,8 @@ GXTable = React.createClass
           </thead>
           <tbody>
             {@renderRows()}
-            {@renderFooter()}
+            {@renderFooter1()}
+            {@renderFooter2()}
           </tbody>
           <thead>
             {@renderColumns(false)}
@@ -80,13 +98,13 @@ GXRow = React.createClass
     day = parseInt(day)
     cells = for i in [1..@props.monthDays]
               if day is i
-                value=@props.model.get("type")
+                value=@props.model.get("SQLB")
               else
                 value=""
-              <GXCell value={value} menu={@props.menu}/>
+              <GXCell value={value} day={i} menu={@props.menu}/>
 
     <tr>
-      <td>{@props.index}</td><td>{@props.model.get("name")}</td>
+      <td>{@props.index}</td><td>{@props.model.get("VCPILOTNAME")} <span className="badge">2</span></td>
       {cells}
     </tr>
 
@@ -112,40 +130,63 @@ GXCell = React.createClass
   render:->
      style =
        color:if @props.value is "G" then "blue" else "black"
-     <td className="text-center" onMouseOver={@mouseOverHandle} onMouseLeave={@mouseLeaveHandle}>
+     <td className="text-center" title={"#{@props.day}日"} onMouseOver={@mouseOverHandle} onMouseLeave={@mouseLeaveHandle}>
       <span style={style}>{@props.value}</span>
      </td>
 
-template =
- 'gxsqList|20':[{
-   name:'@cname'
-   GXRQ:'@date(2015-01-dd)'
-   SQSJ:'@date(2015-01-dd)'
-   'type|1':["G","L"]
-}]
 
-Mock.mock "t.tt", "get",(options)->
-    		gxsqList = Mock.mock(template).gxsqList
-    		gxsqList
 
 
 Model = Backbone.Model.extend
-  idAttribute:"id"
-  url:"t.tt"
+  urlRoot: "/PilotGxWh.ashx"
 Collection = Backbone.Collection.extend
   model:Model
-  url:"t.tt"
+  url:"/PilotGxWh.ashx"
 list = new Collection()
+
+
+
+
+date = new Date();
+curYear = date.getFullYear()
+curMonth = date.getMonth()+1
+curYearMonth = "#{curYear}-#{curMonth}"
+$("#txtStart").val(curYearMonth)
+
 list.fetch
   wait:true
+  data:gxlx: curYearMonth
   async:false
 
-
-
-
-tableProps =
-  year:2015
-  month:1
+PageView = Backbone.View.extend
+  initialize:(options)->
+    @options = _.extend {},options
+    @listenTo @collection,"reset",@render,this
+  render:->
+    tableProps =
+      year:@options.year
+      month:@options.month
+      collection:@collection
+    reactComponent = React.render <GXTable {...tableProps}></GXTable>,
+                      document.getElementById 'table'
+pageView = new PageView
+  el:$("#table")
   collection:list
-React.render <GXTable {...tableProps}></GXTable>,
-  document.getElementById 'container'
+  year:curYear
+  month:curMonth
+
+pageView.render()
+
+$("#btnSearch").click ->
+  debugger
+  date = $("#txtStart").val()
+  year = parseInt date.substr(0, 4);
+  month = parseInt date.substr(date.indexOf("-")+1);
+  yearMonth = "#{year}-#{month}"
+  _.extend pageView.options,year:year,month:month
+  list.fetch
+    wait:true
+    data:gxlx: yearMonth
+    async:false
+    reset:true
+  pageView.render()
