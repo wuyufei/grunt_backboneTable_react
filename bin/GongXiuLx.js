@@ -141,6 +141,7 @@
     render: function() {
       var cells, day, i, index, value;
       index = 1;
+      debugger;
       day = this.props.model.get("GXRQ").slice(-2);
       day = parseInt(day);
       cells = (function() {

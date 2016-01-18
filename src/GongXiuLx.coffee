@@ -94,6 +94,7 @@ GXTable = React.createClass
 GXRow = React.createClass
   render:->
     index = 1
+    debugger
     day = @props.model.get("GXRQ")[-2..]
     day = parseInt(day)
     cells = for i in [1..@props.monthDays]
