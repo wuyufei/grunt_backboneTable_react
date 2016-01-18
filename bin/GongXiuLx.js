@@ -39,7 +39,8 @@
       return React.createElement("tr", null, React.createElement("th", null, "\u5e8f"), React.createElement("th", {
         "style": {
           padding: 0,
-          position: "relative"
+          position: "relative",
+          width: 100
         }
       }, React.createElement("div", {
         "style": lineStyle
@@ -50,15 +51,16 @@
       }, text2)), tds);
     },
     renderRows: function() {
-      var group, index, j, k, len, monthDays, results, v;
+      var group, index, k, monthDays, results, v;
       monthDays = this._getDaysInMonth(this.props.year, this.props.month);
       index = 0;
       group = this.props.collection.groupBy(function(m) {
         return m.get("CHPILOTCODE");
       });
       results = [];
-      for (v = j = 0, len = group.length; j < len; v = ++j) {
-        k = group[v];
+      for (k in group) {
+        v = group[k];
+        index++;
         results.push(React.createElement(GXRow, {
           "menu": menu,
           "monthDays": monthDays,
@@ -69,29 +71,20 @@
       return results;
     },
     renderFooter1: function() {
-      var cells, count, i, model, monthDays;
+      var cells, count, group, i, monthDays;
       monthDays = this._getDaysInMonth(this.props.year, this.props.month);
+      group = _.groupBy(this.props.collection.models, function(m) {
+        return moment(m.get("GXRQ")).get("date");
+      });
       cells = (function() {
-        var j, l, len, ref, ref1, results;
+        var j, ref, ref1, results;
         results = [];
         for (i = j = 1, ref = monthDays; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
-          ref1 = this.props.collection.models;
-          for (l = 0, len = ref1.length; l < len; l++) {
-            model = ref1[l];
-            count = _.filter(this.props.collection.models, function(m) {
-              var day;
-              day = parseInt(m.get("GXRQ").slice(-2));
-              if (day === i) {
-                return true;
-              } else {
-                return false;
-              }
-            }).length;
-          }
+          count = (ref1 = group[i]) != null ? ref1.length : void 0;
           results.push(React.createElement("td", null, count));
         }
         return results;
-      }).call(this);
+      })();
       return React.createElement("tr", null, React.createElement("td", null), React.createElement("td", {
         "style": {
           fontWeigh: "bold"
@@ -126,10 +119,14 @@
       }, React.createElement("button", {
         "onClick": this.refreshHandle,
         "className": "btn btn-success pull-left"
-      }, "\u5237\u65b0"), React.createElement("button", {
+      }, React.createElement("span", {
+        "className": "glyphicon glyphicon-refresh"
+      }), " \u5237\u65b0"), React.createElement("button", {
         "onClick": this.showReasonHandle,
         "className": "btn btn-primary pull-right"
-      }, "\u663e\u793a\u8bf7\u5047\u4e8b\u7531"), React.createElement("h5", null, "\u5f15\u822a\u5458\u516c\u4f11\u8f6e\u4f11\u660e\u7ec6\u8868(", yearMoonth, ")")), React.createElement("div", {
+      }, React.createElement("span", {
+        "className": "glyphicon glyphicon-eye-open"
+      }), " \u663e\u793a\u8bf7\u5047\u4e8b\u7531"), React.createElement("h5", null, "\u5f15\u822a\u5458\u516c\u4f11\u8f6e\u4f11\u660e\u7ec6\u8868(", yearMoonth, ")")), React.createElement("div", {
         "className": "table-responsive"
       }, React.createElement("table", {
         "className": "table table-bordered"
@@ -139,37 +136,34 @@
 
   GXRow = React.createClass({
     render: function() {
-      var cells, day, i, index, value;
+      var cells, i, index, model;
       index = 1;
-      debugger;
-      day = this.props.model.get("GXRQ").slice(-2);
-      day = parseInt(day);
       cells = (function() {
         var j, ref, results;
         results = [];
         for (i = j = 1, ref = this.props.monthDays; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
-          if (day === i) {
-            value = this.props.model.get("SQLB");
-          } else {
-            value = "";
-          }
+          model = _.find(this.props.models, function(m) {
+            var d, mom;
+            mom = moment(m.get("GXRQ"));
+            d = mom.get('date');
+            return d === i;
+          });
           results.push(React.createElement(GXCell, {
-            "value": value,
+            "model": model,
             "day": i,
             "menu": this.props.menu
           }));
         }
         return results;
       }).call(this);
-      return React.createElement("tr", null, React.createElement("td", null, this.props.index), React.createElement("td", null, this.props.model.get("VCPILOTNAME"), " ", React.createElement("span", {
+      return React.createElement("tr", null, React.createElement("td", null, this.props.index), React.createElement("td", null, this.props.models[0].get("VCPILOTNAME"), " ", React.createElement("span", {
         "className": "badge"
-      }, "2")), cells);
+      }, this.props.models.length)), cells);
     }
   });
 
   GXCell = React.createClass({
     componentDidMount: function() {
-      debugger;
       var el;
       el = $(this.getDOMNode());
       return el.contextmenu({
@@ -200,9 +194,11 @@
     },
     render: function() {
       var style;
-      style = {
-        color: this.props.value === "G" ? "blue" : "black"
-      };
+      if (this.props.model) {
+        style = {
+          color: this.props.model.get("SQLB") === "G" ? "blue" : "black"
+        };
+      }
       return React.createElement("td", {
         "className": "text-center",
         "title": this.props.day + "日",
@@ -210,7 +206,7 @@
         "onMouseLeave": this.mouseLeaveHandle
       }, React.createElement("span", {
         "style": style
-      }, this.props.value));
+      }, (this.props.model ? this.props.model.get("SQLB") : "")));
     }
   });
 
@@ -269,7 +265,6 @@
   pageView.render();
 
   $("#btnSearch").click(function() {
-    debugger;
     var month, year, yearMonth;
     date = $("#txtStart").val();
     year = parseInt(date.substr(0, 4));

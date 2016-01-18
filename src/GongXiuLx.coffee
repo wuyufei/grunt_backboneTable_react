@@ -26,7 +26,7 @@ GXTable = React.createClass
 
     <tr >
       <th>序</th>
-      <th style={{padding:0,position:"relative"}}>
+      <th style={{padding:0,position:"relative",width:100}}>
         <div style={lineStyle}></div>
         <div className={class1}>{text1}</div>
         <div className={class2}>{text2}</div>
@@ -38,7 +38,8 @@ GXTable = React.createClass
     index = 0
     group = @props.collection.groupBy (m)->
               m.get("CHPILOTCODE")
-    for k,v in group
+    for k,v of group
+      index++
       <GXRow menu={menu} monthDays={monthDays} models={v} index={index}/>
 
 
@@ -48,16 +49,24 @@ GXTable = React.createClass
 
   renderFooter1:->
     monthDays = @_getDaysInMonth(@props.year,@props.month)
+    # cells = for i in [1..monthDays]
+    #           for model in @props.collection.models
+    #             count= _.filter @props.collection.models,(m)->
+    #                       d = moment(m.get("GXRQ")).get('date')
+    #                       d is i
+    #                   .length
+    #           <td>{count}</td>
+    #用分组的方法
+    group = _.groupBy @props.collection.models,(m)->
+      moment(m.get("GXRQ")).get("date")
     cells = for i in [1..monthDays]
-              for model in @props.collection.models
-                count= _.filter @props.collection.models,(m)->
-                          day = parseInt(m.get("GXRQ")[-2..])
-                          if day is i then true else false
-                      .length
-              <td>{count}</td>
+      count = group[i]?.length
+      <td>{count}</td>
     <tr>
       <td></td><td style={{fontWeigh:"bold"}}>总计</td>{cells}
     </tr>
+
+
   renderFooter2:->
     monthDays = @_getDaysInMonth(@props.year,@props.month)
     cells = for i in [1..monthDays]
@@ -70,8 +79,8 @@ GXTable = React.createClass
     yearMoonth = @props.year + "-" + @props.month
     <div className="panel panel-info">
       <div className="panel-heading text-center">
-        <button onClick={@refreshHandle} className="btn btn-success pull-left">刷新</button>
-        <button onClick={@showReasonHandle} className="btn btn-primary pull-right">显示请假事由</button>
+        <button onClick={@refreshHandle} className="btn btn-success pull-left"><span className="glyphicon glyphicon-refresh"/> 刷新</button>
+        <button onClick={@showReasonHandle} className="btn btn-primary pull-right"><span className="glyphicon glyphicon-eye-open"/> 显示请假事由</button>
         <h5>引航员公休轮休明细表({yearMoonth})</h5>
       </div>
       <div className="table-responsive">
@@ -94,24 +103,20 @@ GXTable = React.createClass
 GXRow = React.createClass
   render:->
     index = 1
-    debugger
-    day = @props.model.get("GXRQ")[-2..]
-    day = parseInt(day)
     cells = for i in [1..@props.monthDays]
-              if day is i
-                value=@props.model.get("SQLB")
-              else
-                value=""
-              <GXCell value={value} day={i} menu={@props.menu}/>
+              model = _.find @props.models,(m)->
+                mom = moment(m.get("GXRQ"))
+                d = mom.get('date')
+                d is i
+              <GXCell model={model} day={i} menu={@props.menu}/>
 
     <tr>
-      <td>{@props.index}</td><td>{@props.model.get("VCPILOTNAME")} <span className="badge">2</span></td>
+      <td>{@props.index}</td><td>{@props.models[0].get("VCPILOTNAME")} <span className="badge">{@props.models.length}</span></td>
       {cells}
     </tr>
 
 GXCell = React.createClass
   componentDidMount:->
-    debugger
     el = $(@getDOMNode())
     el.contextmenu
       target:$("#menu")
@@ -129,10 +134,11 @@ GXCell = React.createClass
     el = $(@getDOMNode())
     el.css("backgroundColor","#fff")
   render:->
-     style =
-       color:if @props.value is "G" then "blue" else "black"
+     if @props.model
+       style =
+         color:if @props.model.get("SQLB") is "G" then "blue" else "black"
      <td className="text-center" title={"#{@props.day}日"} onMouseOver={@mouseOverHandle} onMouseLeave={@mouseLeaveHandle}>
-      <span style={style}>{@props.value}</span>
+      <span style={style}>{if @props.model then @props.model.get("SQLB") else ""}</span>
      </td>
 
 
@@ -179,7 +185,6 @@ pageView = new PageView
 pageView.render()
 
 $("#btnSearch").click ->
-  debugger
   date = $("#txtStart").val()
   year = parseInt date.substr(0, 4);
   month = parseInt date.substr(date.indexOf("-")+1);
