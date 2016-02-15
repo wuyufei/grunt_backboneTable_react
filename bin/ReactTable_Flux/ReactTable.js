@@ -317,6 +317,14 @@
           format = ((ref4 = schema.format) != null ? ref4 : "YYYY-MM-DD").toUpperCase();
           displayValue = $.trim(model.get(key)) === "" ? "" : moment(model.get(key)).format(format);
           content = React.createElement("span", null, displayValue);
+        } else if (schema.type.toLowerCase() === "fileinput") {
+          content = React.createElement("a", {
+            "href": model.get(key),
+            "target": "_blank",
+            "className": "btn btn-xs btn-info"
+          }, React.createElement("span", {
+            "className": "glyphicon glyphicon-download"
+          }), " \u4e0b\u8f7d");
         }
       }
       if (((ref5 = this.state.error) != null ? ref5.model : void 0) === model && this.state.error.key === key) {
@@ -404,6 +412,8 @@
               "checked": this.state.modalFormValues[key] === "1",
               "onChange": this.onModalFieldValueChange.bind(this, model, key)
             });
+          case "fileinput":
+            break;
           default:
             return React.createElement(Input, {
               "type": "text",

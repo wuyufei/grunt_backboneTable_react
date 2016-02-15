@@ -119,6 +119,7 @@ CreateCellContentMixin =
                                          <input ref={ref} style={{height:32}} className="form-control dtpControl_#{key}" autoFocus="true" data-cid={model.cid} value={displayValue}  type="text" onChange={@onCellValueChange.bind(@,model,key)}  readOnly="readonly"/>
                                          <span className="input-group-addon add-on" onClick={@onCellEndEdit.bind(@,model,key)}><i  className="glyphicon glyphicon-remove" ></i></span>
                                     </div>
+
                   else
                     <input style={{height:32}} ref={ref} className="form-control" type="text" bsSize="small" value={@state.editCell.value} onChange={@onCellValueChange.bind(@,model,key)} onBlur={@onCellEndEdit.bind(@,model,key)} autoFocus="true"/>
     else
@@ -131,6 +132,8 @@ CreateCellContentMixin =
         format = (schema.format ? "YYYY-MM-DD").toUpperCase()
         displayValue = if $.trim(model.get(key)) is "" then "" else moment(model.get(key)).format(format)
         content =<span>{displayValue}</span>
+      else if schema.type.toLowerCase() is  "fileinput"
+        content = <a href={model.get(key)} target="_blank" className="btn btn-xs btn-info" ><span className="glyphicon glyphicon-download"></span> 下载</a>
     if @state.error?.model is model and @state.error.key is key
       error = <Overlay show={true} target={=>ReactDOM.findDOMNode(@refs[ref])} placement="right">
                     <Popover>{@state.error.msg}</Popover>
@@ -159,6 +162,7 @@ CreateCellContentMixin =
            displayValue = if $.trim(@state.modalFormValues[key]) is "" then "" else  moment(@state.modalFormValues[key]).format(dateFormat)
            <Input type="text" ref={ref} data-cid={model.cid}  className="dtpControl_#{key} form_datetime" addonBefore={schema.title} buttonAfter={timeClearButton} value={displayValue}/>
         when "checkbox" then <Input type="checkbox" ref={ref} bsSize="small" label={schema.title} checked={@state.modalFormValues[key] is "1"} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
+        when "fileinput" then 
         else  <Input type="text" addonBefore={schema.title} ref={ref} value={@state.modalFormValues[key]} onChange={@onModalFieldValueChange.bind(@,model,key)}/>
 
     if @state.modalFormError?[key]?
