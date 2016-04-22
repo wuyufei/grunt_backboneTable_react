@@ -118,7 +118,7 @@
     displayedPageRecordLength: 10,
     displayedPagesLength: 10,
     allowPage: true,
-    allowSorting: false,
+    allowSorting: true,
     cellClick: function(model, key) {
       debugger;
     },

@@ -205,7 +205,7 @@
           ref2 = this.props.gxtsList;
           for (k = 0, len = ref2.length; k < len; k++) {
             c = ref2[k];
-            if (moment(c.RQ).format("YYYY-MM-DD") === moment(this.props.year + "-" + this.props.month + "-" + i).format("YYYY-MM-DD")) {
+            if (moment(c.RQ).isSame(this.props.year + "-" + (this.props.month >= 10 ? this.props.month : "0" + this.props.month) + "-" + (i >= 10 ? i : "0" + i))) {
               limit = c.TS;
             }
           }
@@ -224,7 +224,7 @@
           ref2 = this.props.gxtsList;
           for (k = 0, len = ref2.length; k < len; k++) {
             c = ref2[k];
-            if (moment(c.RQ).format("YYYY-MM-DD") === moment(this.props.year + "-" + (this.props.month + 1) + "-" + i).format("YYYY-MM-DD")) {
+            if (moment(c.RQ).isSame(this.props.year + "-" + (this.props.month >= 10 ? this.props.month : "0" + this.props.month) + "-" + (i >= 10 ? i : "0" + i))) {
               limit = c.TS;
             }
           }
@@ -252,7 +252,7 @@
           ref1 = this.props.gxtsList;
           for (k = 0, len = ref1.length; k < len; k++) {
             c = ref1[k];
-            if (moment(c.RQ).format("YYYY-MM-DD") === moment(this.props.year + "-" + (this.props.month >= 10 ? this.props.month : "0" + this.props.month) + "-" + (i >= 10 ? i : "0" + i)).format("YYYY-MM-DD")) {
+            if (moment(c.RQ).isSame(this.props.year + "-" + (this.props.month >= 10 ? this.props.month : "0" + this.props.month) + "-" + (i >= 10 ? i : "0" + i))) {
               limit = c.TS;
             }
           }
@@ -267,7 +267,7 @@
           ref1 = this.props.gxtsList;
           for (k = 0, len = ref1.length; k < len; k++) {
             c = ref1[k];
-            if (moment(c.RQ).format("YYYY-MM-DD") === moment(this.props.year + "-" + (this.props.month + 1 >= 10 ? this.props.month + 1 : "0" + (this.props.month + 1)) + "-" + (i >= 10 ? i : "0" + i)).format("YYYY-MM-DD")) {
+            if (moment(c.RQ).isSame(this.props.year + "-" + (this.props.month + 1 >= 10 ? this.props.month + 1 : "0" + (this.props.month + 1)) + "-" + (i >= 10 ? i : "0" + i))) {
               limit = c.TS;
             }
           }

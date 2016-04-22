@@ -30,7 +30,7 @@ GXTable = React.createClass
     d = new Date(year,month,0)
     return d.getDate();
   _timeEqual:(a,b)->
-    
+
 
   renderColumns:(isHeader)->
     [text1,text2,class1,class2,angle]=["日期","姓名","text-right","text-left",20]
@@ -149,13 +149,13 @@ GXTable = React.createClass
       subS = @props.month + "-" + i
       count = group[subS]?.length
       #if大于限额，背景红色
-      limit = c.TS for c in @props.gxtsList when moment(c.RQ).format("YYYY-MM-DD") is moment("#{@props.year}-#{@props.month}-#{i}").format("YYYY-MM-DD")
+      limit = c.TS for c in @props.gxtsList when moment(c.RQ).isSame("#{@props.year}-#{if @props.month >=10 then @props.month else "0"+@props.month}-#{if i>=10 then i else "0"+i}")
       <td className={if count>limit then "danger" else ""}>{count}</td>
     cells2 = for i in [1..md.m2]
       subS = @props.month+1 + "-" + i
       count = group[subS]?.length
       #if大于限额，背景红色
-      limit = c.TS for c in @props.gxtsList when moment(c.RQ).format("YYYY-MM-DD") is moment("#{@props.year}-#{@props.month+1}-#{i}").format("YYYY-MM-DD")
+      limit = c.TS for c in @props.gxtsList when moment(c.RQ).isSame("#{@props.year}-#{if @props.month >=10 then @props.month else "0"+@props.month}-#{if i>=10 then i else "0"+i}")
       <td className={if count>limit then "danger" else ""}>{count}</td>
     cells = cells1.concat(cells2)
     <tr>
@@ -168,10 +168,10 @@ GXTable = React.createClass
 
     md = @_getMonthDayObj()
     cells1 = for i in [1..md.m1]
-              limit = c.TS for c in @props.gxtsList when moment(c.RQ).format("YYYY-MM-DD") is moment("#{@props.year}-#{if @props.month >=10 then @props.month else "0"+@props.month}-#{if i>=10 then i else "0"+i}").format("YYYY-MM-DD")
+              limit = c.TS for c in @props.gxtsList when moment(c.RQ).isSame("#{@props.year}-#{if @props.month >=10 then @props.month else "0"+@props.month}-#{if i>=10 then i else "0"+i}")
               <td>{limit}</td>
     cells2 = for i in [1..md.m2]
-              limit = c.TS for c in @props.gxtsList when moment(c.RQ).format("YYYY-MM-DD") is moment("#{@props.year}-#{if @props.month+1 >=10 then @props.month+1 else "0"+(@props.month+1)}-#{if i>=10 then i else "0"+i}").format("YYYY-MM-DD")
+              limit = c.TS for c in @props.gxtsList when moment(c.RQ).isSame("#{@props.year}-#{if @props.month+1 >=10 then @props.month+1 else "0"+(@props.month+1)}-#{if i>=10 then i else "0"+i}")
               <td>{limit}</td>
     cells = cells1.concat(cells2)
     <tr>

@@ -1,12 +1,14 @@
 (function() {
-  var BackboneTable, Breadcrumb, BreadcrumbItem, Button, ButtonGroup, Col, CreateCellContentMixin, DateTimeCellMixin, Dropdown, Glyphicon, Grid, Input, MenuItem, Modal, Overlay, Pagination, Popover, ReactTable, Row, SplitButton;
+  var BackboneTable, Breadcrumb, BreadcrumbItem, Button, ButtonGroup, Col, CreateCellContentMixin, DateTimeCellMixin, Dropdown, Glyphicon, Grid, Input, MenuItem, Modal, Overlay, Pagination, Popover, ReactModal, ReactTable, Row, SplitButton;
 
   Grid = ReactBootstrap.Grid, Row = ReactBootstrap.Row, Col = ReactBootstrap.Col, Input = ReactBootstrap.Input, Button = ReactBootstrap.Button, Breadcrumb = ReactBootstrap.Breadcrumb, BreadcrumbItem = ReactBootstrap.BreadcrumbItem, Modal = ReactBootstrap.Modal, Overlay = ReactBootstrap.Overlay, Popover = ReactBootstrap.Popover, Pagination = ReactBootstrap.Pagination, ButtonGroup = ReactBootstrap.ButtonGroup, SplitButton = ReactBootstrap.SplitButton, MenuItem = ReactBootstrap.MenuItem, Glyphicon = ReactBootstrap.Glyphicon, Dropdown = ReactBootstrap.Dropdown;
 
   window.BackboneTable = BackboneTable = Backbone.View.extend({
     initialize: function(options) {
       this.options = _.extend({}, options);
-      return this.listenTo(this.collection, "sync destroy add remove", this.render);
+      this.listenTo(this.collection, "sync destroy add remove", this.render);
+      this.modalContainer = $("<div>");
+      return $("body").append(this.modalContainer);
     },
     getSortList: function(field, dir) {
       var getSortValue, schema, sortModels, that;
@@ -31,9 +33,6 @@
       }
       return sortModels;
     },
-    getNewModel: function() {
-      return new this.collection.model();
-    },
     deleteModel: function(model) {
       var er;
       er = "";
@@ -48,7 +47,7 @@
       });
       return er;
     },
-    saveModel: function(model, props) {
+    saveModel: function(model, props, success, fail) {
       var isNew, that;
       that = this;
       isNew = model.isNew();
@@ -57,27 +56,57 @@
           if (isNew) {
             that.collection.add(model);
           }
-          return that.render();
+          that.render();
+          return success();
         },
-        error: function() {}
+        error: function(state, exception) {
+          return fail(exception.responseJSON.ExceptionMessage);
+        }
       });
+    },
+    showModal: function(type, model) {
+      var m, props;
+      props = {
+        componentDidMount: this.options.componentDidMount,
+        componentDidUpdate: this.options.componentDidUpdate
+      };
+      switch (type) {
+        case "add":
+          m = new this.collection.model();
+          return ReactDOM.render(React.createElement(ReactModal, React.__spread({}, props, {
+            "model": m,
+            "action": type,
+            "saveModel": this.saveModel.bind(this)
+          })), this.modalContainer[0]);
+        case "edit":
+          return ReactDOM.render(React.createElement(ReactModal, React.__spread({}, props, {
+            "model": model,
+            "action": type,
+            "saveModel": this.saveModel.bind(this)
+          })), this.modalContainer[0]);
+        case "detail":
+          return ReactDOM.render(React.createElement(ReactModal, React.__spread({}, props, {
+            "model": model,
+            "action": type,
+            "saveModel": this.saveModel.bind(this)
+          })), this.modalContainer[0]);
+      }
     },
     render: function() {
       return ReactDOM.render(React.createElement(ReactTable, React.__spread({}, this.options, {
-        "saveModel": this.saveModel.bind(this),
+        "showModal": this.showModal.bind(this),
         "deleteModel": this.deleteModel,
-        "getSortList": this.getSortList,
-        "getNewModel": this.getNewModel
+        "getSortList": this.getSortList
       })), this.el);
     }
   });
 
   DateTimeCellMixin = {
     componentWillUpdate: function(nextProps, nextState) {
-      var el, k, modalBody, results, schema, v;
+      var el, k, modalBody, ref1, ref2, results, schema, v;
       el = $(this.getDOMNode());
       modalBody = $(React.findDOMNode(this.refs.modalBody));
-      schema = this.props.collection.model.prototype.schema;
+      schema = (ref1 = (ref2 = this.props.collection) != null ? ref2.model.prototype.schema : void 0) != null ? ref1 : this.props.model.schema;
       results = [];
       for (k in schema) {
         v = schema[k];
@@ -96,9 +125,9 @@
       return this.createDateTimePickerControl();
     },
     createDateTimePickerControl: function() {
-      var dtpControls, el, k, modalBody, ref1, results, schema, that, v;
+      var dtpControls, el, k, modalBody, ref1, ref2, ref3, results, schema, that, v;
       that = this;
-      schema = this.props.collection.model.prototype.schema;
+      schema = (ref1 = (ref2 = this.props.collection) != null ? ref2.model.prototype.schema : void 0) != null ? ref1 : this.props.model.schema;
       if (this.state.showModal) {
         modalBody = $(React.findDOMNode(this.refs.modalBody));
         for (k in schema) {
@@ -126,7 +155,7 @@
             return function(e) {
               var $el, model;
               $el = $(e.currentTarget);
-              model = that.state.modalFormModel;
+              model = that.props.model;
               e = {
                 target: {
                   value: $el.val()
@@ -160,7 +189,7 @@
         });
         dtpControls.on("changeDate", (function(k) {
           return function(e) {
-            var $el, model, ref1;
+            var $el, model, ref3;
             $el = $(e.currentTarget);
             model = that.props.collection.get($el.data("cid"));
             e = {
@@ -169,14 +198,14 @@
               }
             };
             that.onCellEndEdit(model, k, e);
-            if (((ref1 = that.state.editCell) != null ? ref1.model : void 0) === model && that.state.editCell.key === k) {
+            if (((ref3 = that.state.editCell) != null ? ref3.model : void 0) === model && that.state.editCell.key === k) {
               return that.setState({
                 editCell: null
               });
             }
           };
         })(k));
-        if (((ref1 = this.state.editCell) != null ? ref1.key : void 0) === k) {
+        if (((ref3 = this.state.editCell) != null ? ref3.key : void 0) === k) {
           results.push(dtpControls.datetimepicker("show"));
         } else {
           results.push(void 0);
@@ -345,170 +374,6 @@
       }
       return content;
     },
-    getModalFieldContent: function(model, key) {
-      var addonBefore, content, dateFormat, displayValue, emptyValue, error, fuOpt, opt, options, ref, ref1, ref2, ref3, schema, that, timeClearButton, type;
-      that = this;
-      ref = "modalForm" + key + model.cid;
-      schema = model.schema[key];
-      type = schema.type.toLowerCase();
-      emptyValue = {
-        target: {
-          value: ""
-        }
-      };
-      timeClearButton = React.createElement(Button, {
-        "onClick": this.onModalFieldValueChange.bind(this, model, key, emptyValue)
-      }, React.createElement(Glyphicon, {
-        "glyph": "remove"
-      }));
-      if ((model != null ? (ref1 = model.validation) != null ? (ref2 = ref1[key]) != null ? ref2.required : void 0 : void 0 : void 0) === true) {
-        addonBefore = schema.title + "*";
-      } else {
-        addonBefore = schema.title;
-      }
-      content = (function() {
-        var ref3;
-        switch (type) {
-          case "text":
-            return React.createElement(Input, {
-              "type": "text",
-              "ref": ref,
-              "addonBefore": addonBefore,
-              "value": this.state.modalFormValues[key],
-              "onChange": this.onModalFieldValueChange.bind(this, model, key)
-            });
-          case "select":
-            return React.createElement(Input, {
-              "type": "select",
-              "ref": ref,
-              "addonBefore": schema.title,
-              "value": this.state.modalFormValues[key],
-              "onChange": this.onModalFieldValueChange.bind(this, model, key)
-            }, (options = (function() {
-              var i, len, ref3, results;
-              ref3 = schema.options;
-              results = [];
-              for (i = 0, len = ref3.length; i < len; i++) {
-                opt = ref3[i];
-                results.push(React.createElement("option", {
-                  "value": opt.val
-                }, opt.label));
-              }
-              return results;
-            })()));
-          case "datetime":
-            dateFormat = ((ref3 = schema.format) != null ? ref3 : "YYYY-MM-DD").toUpperCase();
-            displayValue = $.trim(this.state.modalFormValues[key]) === "" ? "" : moment(this.state.modalFormValues[key]).format(dateFormat);
-            return React.createElement(Input, {
-              "type": "text",
-              "ref": ref,
-              "data-cid": model.cid,
-              "className": "dtpControl_" + key + " form_datetime",
-              "addonBefore": schema.title,
-              "buttonAfter": timeClearButton,
-              "value": displayValue
-            });
-          case "checkbox":
-            return React.createElement(Input, {
-              "type": "checkbox",
-              "ref": ref,
-              "bsSize": "small",
-              "label": schema.title,
-              "checked": this.state.modalFormValues[key] === "1",
-              "onChange": this.onModalFieldValueChange.bind(this, model, key)
-            });
-          case "fileinput":
-            fuOpt = {
-              baseUrl: schema.url,
-              dataType: "string",
-              chooseFile: function(files, mill) {
-                return that.refs.fileInputText.value = files[0].name;
-              },
-              beforeUpload: function(files, nill) {},
-              uploadSuccess: function(resp) {
-                return that.onModalFieldValueChange(model, key, resp.url);
-              },
-              uploadFail: function(resp) {
-                debugger;
-              },
-              param: {
-                fileCategory: schema.fileCategory
-              }
-            };
-            return React.createElement("div", {
-              "className": "input-group"
-            }, React.createElement("span", {
-              "className": "input-group-addon"
-            }, addonBefore), React.createElement("input", {
-              "type": "text",
-              "ref": "fileInputText",
-              "className": "form-control"
-            }), React.createElement("span", {
-              "className": "input-group-addon"
-            }, React.createElement(FileUpload, {
-              "options": fuOpt,
-              "style": {
-                height: 20
-              }
-            }, React.createElement("button", {
-              "className": "btn btn-default btn-xs",
-              "ref": "uploadBtn"
-            }, React.createElement("span", {
-              "className": "glyphicon glyphicon glyphicon-upload",
-              "aria-hidden": "true"
-            }), "  \u4e0a\u4f20"), React.createElement("button", {
-              "className": "btn btn-info btn-xs",
-              "ref": "chooseBtn"
-            }, React.createElement("span", {
-              "className": "glyphicon glyphicon glyphicon-folder-open",
-              "aria-hidden": "true"
-            }), "  \u6d4f\u89c8"))));
-          default:
-            return React.createElement(Input, {
-              "type": "text",
-              "addonBefore": schema.title,
-              "ref": ref,
-              "value": this.state.modalFormValues[key],
-              "onChange": this.onModalFieldValueChange.bind(this, model, key)
-            });
-        }
-      }).call(this);
-      if (((ref3 = this.state.modalFormError) != null ? ref3[key] : void 0) != null) {
-        error = React.createElement(Overlay, {
-          "show": true,
-          "target": ((function(_this) {
-            return function() {
-              return ReactDOM.findDOMNode(_this.refs[ref]);
-            };
-          })(this)),
-          "container": this,
-          "placement": "top"
-        }, React.createElement(Popover, {
-          "style": {
-            zIndex: 99999
-          }
-        }, this.state.modalFormError[key]));
-        content = [content, error];
-      }
-      return content;
-    },
-    onModalFieldValueChange: function(model, key, e) {
-      var error, formValues, value;
-      if (model.schema[key].type.toLowerCase() === "fileinput") {
-        value = e;
-      } else {
-        value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
-      }
-      formValues = this.state.modalFormValues;
-      formValues[key] = value;
-      this.setState({
-        modalFormValues: formValues
-      });
-      error = model.validate(formValues);
-      return this.setState({
-        modalFormError: error
-      });
-    },
     onCellValueChange: function(model, key, e) {
       var error, obj, value;
       value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
@@ -648,7 +513,6 @@
       return {
         activePage: 1,
         selectedRow: null,
-        showModal: false,
         showConfirmModal: false,
         sortField: (ref1 = this.props.sortField) != null ? ref1 : null,
         sortDir: (ref2 = this.props.sortDir) != null ? ref2 : "asc",
@@ -657,8 +521,6 @@
           key: null,
           error: null
         },
-        modalFormValues: null,
-        modalFormModel: null,
         editCellIsValidate: true,
         error: {
           model: null,
@@ -677,11 +539,6 @@
         showConfirmModal: false
       });
     },
-    hideModalHandle: function() {
-      return this.setState({
-        showModal: false
-      });
-    },
     hideConfirmModalHandle: function() {
       return this.setState({
         showConfirmModal: false
@@ -694,25 +551,6 @@
       this.hideConfirmModalHandle();
       if (error) {
         return alert(error);
-      }
-    },
-    saveButtonHandle: function() {
-      debugger;
-      var error, k, obj, schemas, v, values;
-      schemas = this.props.collection.model.prototype.schema;
-      obj = {};
-      for (k in schemas) {
-        v = schemas[k];
-        obj[k] = void 0;
-      }
-      values = _.extend(obj, this.state.modalFormValues);
-      error = this.state.modalFormModel.validate(values);
-      if (error) {
-        return this.setState({
-          modalFormError: error
-        });
-      } else {
-        return this.props.saveModel(this.state.modalFormModel, this.state.modalFormValues);
       }
     },
     cellClickHandle: function(model, key, e) {
@@ -774,32 +612,11 @@
       if ((e != null ? typeof e.isDefaultPrevented === "function" ? e.isDefaultPrevented() : void 0 : void 0) !== true) {
         switch (command) {
           case "add":
-            model = this.props.getNewModel();
-            return this.setState({
-              showModal: true,
-              action: command,
-              modalFormModel: model,
-              modalFormValues: _.extend({}, model.attributes),
-              modalFormError: null
-            });
+            return this.props.showModal("add");
           case "edit":
-            return this.setState({
-              selectedRow: model,
-              showModal: true,
-              action: command,
-              modalFormModel: model,
-              modalFormValues: _.extend({}, model.attributes),
-              modalFormError: null
-            });
+            return this.props.showModal("edit", model);
           case "detail":
-            return this.setState({
-              selectedRow: model,
-              showModal: true,
-              action: command,
-              modalFormModel: model,
-              modalFormValues: _.extend({}, model.attributes),
-              modalFormError: null
-            });
+            return this.props.showModal("detail", model);
           case "delete":
             return this.setState({
               selectedRow: model,
@@ -810,7 +627,7 @@
       }
     },
     render: function() {
-      var btnInfo, btnProps, buttonCellWidth, buttons, columns, displayedPageRecordLength, displayedPagesLength, fieldsetProps, k, model, obj, pageCollection, pageCount, ref1, ref2, ref3, result, sortCollection, style, tmp1, v;
+      var btnInfo, btnProps, buttonCellWidth, buttons, columns, displayedPageRecordLength, displayedPagesLength, k, model, obj, pageCollection, pageCount, ref1, ref2, result, sortCollection, style, tmp1, v;
       if (this.props.allowPage !== false) {
         displayedPageRecordLength = (ref1 = this.props.displayedPageRecordLength) != null ? ref1 : 10;
         displayedPagesLength = (ref2 = this.props.displayedPagesLength) != null ? ref2 : 10;
@@ -819,13 +636,6 @@
         pageCollection = sortCollection.slice((this.state.activePage - 1) * displayedPageRecordLength, +(this.state.activePage * displayedPageRecordLength - 1) + 1 || 9e9);
       } else {
         pageCollection = this.sortList;
-      }
-      if (this.state.action === "detail") {
-        fieldsetProps = {
-          disabled: "disabled"
-        };
-      } else {
-        fieldsetProps = {};
       }
       return React.createElement("div", {
         "className": "panel panel-default"
@@ -1032,42 +842,6 @@
         "activePage": this.state.activePage,
         "onSelect": this.pageChangeHandle
       }) : void 0)), React.createElement(Modal, {
-        "show": this.state.showModal,
-        "onHide": this.hideModalHandle,
-        "bsSize": "large",
-        "backdrop": "static"
-      }, React.createElement(Modal.Header, {
-        "closeButton": true
-      }, React.createElement(Modal.Title, null, "\u8be6\u60c5")), React.createElement(Modal.Body, {
-        "ref": "modalBody"
-      }, React.createElement("form", null, React.createElement("fieldset", React.__spread({}, fieldsetProps), React.createElement(Grid, {
-        "fluid": true
-      }, React.createElement(Row, {
-        "className": "show-grid"
-      }, ((function() {
-        var ref3, results;
-        if (this.state.modalFormValues != null) {
-          model = this.state.modalFormModel;
-          debugger;
-          ref3 = model.schema;
-          results = [];
-          for (k in ref3) {
-            v = ref3[k];
-            results.push(React.createElement(Col, {
-              "xs": 12.,
-              "sm": 6.,
-              "md": 6.
-            }, this.getModalFieldContent(model, k)));
-          }
-          return results;
-        }
-      }).call(this))))))), React.createElement(Modal.Footer, null, ((ref3 = this.state.action) === "add" || ref3 === "edit" ? React.createElement("div", null, React.createElement(Button, {
-        "bsStyle": "primary",
-        "onClick": this.saveButtonHandle
-      }, "\u4fdd\u5b58"), React.createElement(Button, {
-        "bsStyle": "default",
-        "onClick": this.hideModalHandle
-      }, "\u53d6\u6d88")) : void 0))), React.createElement(Modal, {
         "show": this.state.showConfirmModal,
         "onHide": this.hideConfirmModalHandle,
         "bsSize": "sm"
@@ -1082,6 +856,313 @@
         "bsStyle": "default",
         "onClick": this.hideConfirmModalHandle
       }, "\u53d6\u6d88"))));
+    }
+  });
+
+  ReactModal = React.createClass({
+    mixins: [DateTimeCellMixin],
+    getInitialState: function() {
+      return {
+        modalFormValues: $.extend(true, {}, this.props.model.attributes),
+        showModal: true,
+        fileUploadSuccess: false
+      };
+    },
+    componentWillMount: function() {},
+    componentWillReceiveProps: function(nextProps) {
+      return this.setState({
+        showModal: true,
+        modalFormValues: $.extend(true, {}, nextProps.model.attributes),
+        fileUploadSuccess: false
+      });
+    },
+    componentDidMount: function() {
+      var base;
+      return typeof (base = this.props).componentDidMount === "function" ? base.componentDidMount(this) : void 0;
+    },
+    componentDidUpdate: function() {
+      var base;
+      return typeof (base = this.props).componentDidUpdate === "function" ? base.componentDidUpdate(this) : void 0;
+    },
+    hideModalHandle: function() {
+      return this.setState({
+        showModal: false
+      });
+    },
+    saveButtonHandle: function() {
+      debugger;
+      var error, k, obj, schemas, v, values;
+      schemas = this.props.model.schema;
+      obj = {};
+      for (k in schemas) {
+        v = schemas[k];
+        obj[k] = void 0;
+      }
+      values = _.extend(obj, this.state.modalFormValues);
+      error = this.props.model.validate(values);
+      if (error) {
+        return this.setState({
+          modalFormError: error
+        });
+      } else {
+        return this.props.saveModel(this.props.model, this.state.modalFormValues, (function(_this) {
+          return function() {
+            _this.setState({
+              serverError: null
+            });
+            return _this.hideModalHandle();
+          };
+        })(this), (function(_this) {
+          return function(error) {
+            return _this.setState({
+              serverError: error
+            });
+          };
+        })(this));
+      }
+    },
+    getModalFieldContent: function(model, key) {
+      var addonBefore, content, dateFormat, displayValue, emptyValue, error, fuOpt, opt, options, ref, ref1, ref2, ref3, schema, that, timeClearButton, type;
+      that = this;
+      ref = "modalForm" + key + model.cid;
+      schema = model.schema[key];
+      type = schema.type.toLowerCase();
+      emptyValue = {
+        target: {
+          value: ""
+        }
+      };
+      timeClearButton = React.createElement(Button, {
+        "onClick": this.onModalFieldValueChange.bind(this, model, key, emptyValue)
+      }, React.createElement(Glyphicon, {
+        "glyph": "remove"
+      }));
+      if ((model != null ? (ref1 = model.validation) != null ? (ref2 = ref1[key]) != null ? ref2.required : void 0 : void 0 : void 0) === true) {
+        addonBefore = schema.title + "*";
+      } else {
+        addonBefore = schema.title;
+      }
+      content = (function() {
+        var ref3;
+        switch (type) {
+          case "text":
+            return React.createElement(Input, {
+              "type": "text",
+              "ref": ref,
+              "addonBefore": addonBefore,
+              "value": this.state.modalFormValues[key],
+              "onChange": this.onModalFieldValueChange.bind(this, model, key)
+            });
+          case "select":
+            return React.createElement(Input, {
+              "type": "select",
+              "ref": ref,
+              "addonBefore": schema.title,
+              "value": this.state.modalFormValues[key],
+              "onChange": this.onModalFieldValueChange.bind(this, model, key)
+            }, (options = (function() {
+              var i, len, ref3, results;
+              ref3 = schema.options;
+              results = [];
+              for (i = 0, len = ref3.length; i < len; i++) {
+                opt = ref3[i];
+                results.push(React.createElement("option", {
+                  "value": opt.val
+                }, opt.label));
+              }
+              return results;
+            })()));
+          case "datetime":
+            dateFormat = ((ref3 = schema.format) != null ? ref3 : "YYYY-MM-DD").toUpperCase();
+            displayValue = $.trim(this.state.modalFormValues[key]) === "" ? "" : moment(this.state.modalFormValues[key]).format(dateFormat);
+            return React.createElement(Input, {
+              "type": "text",
+              "ref": ref,
+              "data-cid": model.cid,
+              "className": "dtpControl_" + key + " form_datetime",
+              "addonBefore": schema.title,
+              "buttonAfter": timeClearButton,
+              "value": displayValue
+            });
+          case "checkbox":
+            return React.createElement(Input, {
+              "type": "checkbox",
+              "ref": ref,
+              "bsSize": "small",
+              "label": schema.title,
+              "checked": this.state.modalFormValues[key] === "1",
+              "onChange": this.onModalFieldValueChange.bind(this, model, key)
+            });
+          case "fileinput":
+            fuOpt = {
+              baseUrl: schema.url,
+              dataType: "string",
+              chooseFile: function(files, mill) {
+                return that.refs.fileInputText.value = files[0].name;
+              },
+              beforeUpload: function(files, nill) {},
+              uploadSuccess: function(resp) {
+                debugger;
+                that.onModalFieldValueChange(model, key, resp.url);
+                return that.setState({
+                  fileUploadSuccess: true
+                });
+              },
+              uploadFail: function(resp) {
+                debugger;
+              },
+              param: {
+                fileCategory: schema.fileCategory
+              }
+            };
+            return React.createElement("div", {
+              "className": "input-group",
+              "ref": ref
+            }, React.createElement("span", {
+              "className": "input-group-addon"
+            }, addonBefore), React.createElement("input", {
+              "type": "text",
+              "ref": "fileInputText",
+              "className": "form-control"
+            }), React.createElement("span", {
+              "className": "input-group-addon"
+            }, React.createElement(FileUpload, {
+              "options": fuOpt,
+              "style": {
+                height: 20
+              }
+            }, React.createElement("button", {
+              "className": "btn btn-default btn-xs",
+              "ref": "uploadBtn"
+            }, React.createElement("span", {
+              "className": "glyphicon glyphicon glyphicon-upload",
+              "aria-hidden": "true"
+            }), "  \u4e0a\u4f20"), React.createElement("button", {
+              "className": "btn btn-info btn-xs",
+              "ref": "chooseBtn"
+            }, React.createElement("span", {
+              "className": "glyphicon glyphicon glyphicon-folder-open",
+              "aria-hidden": "true"
+            }), "  \u6d4f\u89c8"))), React.createElement(Overlay, {
+              "show": this.state.fileUploadSuccess,
+              "target": ((function(_this) {
+                return function() {
+                  return ReactDOM.findDOMNode(_this.refs[ref]);
+                };
+              })(this)),
+              "container": this,
+              "placement": "top"
+            }, React.createElement(Popover, {
+              "style": {
+                zIndex: 99999
+              }
+            }, "\u6587\u4ef6\u4e0a\u4f20\u6210\u529f")));
+          default:
+            return React.createElement(Input, {
+              "type": "text",
+              "addonBefore": schema.title,
+              "ref": ref,
+              "value": this.state.modalFormValues[key],
+              "onChange": this.onModalFieldValueChange.bind(this, model, key)
+            });
+        }
+      }).call(this);
+      if (((ref3 = this.state.modalFormError) != null ? ref3[key] : void 0) != null) {
+        error = React.createElement(Overlay, {
+          "show": true,
+          "target": ((function(_this) {
+            return function() {
+              return ReactDOM.findDOMNode(_this.refs[ref]);
+            };
+          })(this)),
+          "container": this,
+          "placement": "top"
+        }, React.createElement(Popover, {
+          "style": {
+            zIndex: 99999
+          }
+        }, this.state.modalFormError[key]));
+        content = [content, error];
+      }
+      return content;
+    },
+    onModalFieldValueChange: function(model, key, e) {
+      var error, formValues, value;
+      if (model.schema[key].type.toLowerCase() === "fileinput") {
+        value = e;
+      } else {
+        value = model.schema[key].type.toLowerCase() === "checkbox" ? (e.target.checked === true ? "1" : "0") : e.target.value;
+      }
+      formValues = this.state.modalFormValues;
+      formValues[key] = value;
+      this.setState({
+        modalFormValues: formValues
+      });
+      error = model.validate(formValues);
+      return this.setState({
+        modalFormError: error
+      });
+    },
+    render: function() {
+      var fieldsetProps, k, model, ref1, v;
+      if (this.props.action === "detail") {
+        fieldsetProps = {
+          disabled: "disabled"
+        };
+      } else {
+        fieldsetProps = {};
+      }
+      return React.createElement(Modal, {
+        "show": this.state.showModal,
+        "onHide": this.hideModalHandle,
+        "bsSize": "large",
+        "backdrop": (this.props.action === "detail" ? true : "static")
+      }, React.createElement(Modal.Header, {
+        "closeButton": true
+      }, React.createElement(Modal.Title, null, "\u8be6\u60c5")), React.createElement(Modal.Body, {
+        "ref": "modalBody"
+      }, React.createElement("fieldset", React.__spread({}, fieldsetProps), React.createElement(Grid, {
+        "fluid": true
+      }, React.createElement(Row, {
+        "className": "show-grid"
+      }, ((function() {
+        var ref1, results;
+        if (this.state.modalFormValues != null) {
+          model = this.props.model;
+          debugger;
+          ref1 = model.schema;
+          results = [];
+          for (k in ref1) {
+            v = ref1[k];
+            results.push(React.createElement(Col, {
+              "xs": 12.,
+              "sm": 6.,
+              "md": 6.
+            }, this.getModalFieldContent(model, k)));
+          }
+          return results;
+        }
+      }).call(this)))))), React.createElement(Modal.Footer, null, ((ref1 = this.props.action) === "add" || ref1 === "edit" ? React.createElement("div", null, React.createElement(Button, {
+        "bsStyle": "primary",
+        "ref": "saveButton",
+        "onClick": this.saveButtonHandle
+      }, "\u4fdd\u5b58"), React.createElement(Button, {
+        "bsStyle": "default",
+        "onClick": this.hideModalHandle
+      }, "\u53d6\u6d88")) : void 0), (this.state.serverError ? React.createElement(Overlay, {
+        "show": true,
+        "target": ((function(_this) {
+          return function() {
+            return ReactDOM.findDOMNode(_this.refs.saveButton);
+          };
+        })(this)),
+        "container": this,
+        "placement": "top"
+      }, React.createElement(Popover, {
+        "style": {
+          zIndex: 99999
+        }
+      }, this.state.serverError)) : void 0)));
     }
   });
 
